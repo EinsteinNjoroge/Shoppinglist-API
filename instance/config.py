@@ -4,8 +4,12 @@ import os
 class Config(object):
     """Parent configuration class."""
     DEBUG = False
+
+    # Cross-Site request forgery
     CSRF_ENABLED = True
-    SECRET = os.getenv('SECRET')
+
+    # generate random 24 character secret key
+    SECRET = os.urandom(24)
     SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL')
 
 
@@ -32,7 +36,7 @@ class ProductionConfig(Config):
     TESTING = False
 
 
-app_config = {
+configurations = {
     'development': DevelopmentConfig,
     'testing': TestingConfig,
     'staging': StagingConfig,
