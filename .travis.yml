@@ -1,0 +1,19 @@
+language: python
+
+python:
+  - "3.6"
+  - "3.3"
+
+# install dependencies
+install:
+  - "pip install -r requirements.txt"
+
+# run test and report test-coverage to coveralls.io
+script:
+  - "coverage run --source=classes -m py.test && coverage report"
+  - "coveralls"
+
+
+after_success:
+  - "coveralls"
+  - "codacy"
