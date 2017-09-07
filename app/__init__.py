@@ -8,9 +8,9 @@ from instance.config import configurations
 db = SQLAlchemy()
 
 
-def create_app(configuration_name):
+def create_instance_of_flask_api(configuration_name):
     """
-    Instantiates Flask and sets configurations for the flask app
+    Instantiates Flask and sets configurations for the flask api
 
     Args:
         configuration_name (str): Name of the preferred configuration for this instance
@@ -19,10 +19,10 @@ def create_app(configuration_name):
         FlaskAPI: instance of API
 
     """
-    app = FlaskAPI(__name__, instance_relative_config=True)
-    app.config.from_object(configurations[configuration_name])
-    app.config.from_pyfile('config.py')
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    db.init_app(app)
+    flask_api = FlaskAPI(__name__, instance_relative_config=True)
+    flask_api.config.from_object(configurations[configuration_name])
+    flask_api.config.from_pyfile('config.py')
+    flask_api.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    db.init_app(flask_api)
 
-    return app
+    return flask_api
