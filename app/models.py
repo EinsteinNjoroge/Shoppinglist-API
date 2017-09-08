@@ -46,7 +46,7 @@ class ShoppingListItems(db.Model):
     name = db.Column('name', db.String(10), nullable=False)
     shoppinglist_id = db.Column(
         db.Integer, db.ForeignKey(
-            'shoppinglists.shoppinglist_id',
+            'shoppinglists.id',
             onupdate="CASCADE",
             ondelete="CASCADE"
         ),
