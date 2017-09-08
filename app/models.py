@@ -33,7 +33,8 @@ class Shoppinglists(db.Model):
     id = db.Column('id', db.Integer, primary_key=True)
     title = db.Column('title', db.String(10), nullable=False)
 
-    # create virtual column for maintaining table relationship and data integrity
+    # create virtual column
+    # for maintaining table relationship and data integrity
     shoppinglists_items = db.relationship(
         "ShoppingListItems", backref="shoppinglists", lazy="dynamic")
 

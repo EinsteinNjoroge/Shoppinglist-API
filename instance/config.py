@@ -1,6 +1,9 @@
 import os
 
 
+DATABASE_URI = 'postgresql://postgres:user123*-+@localhost/flask_api'
+
+
 class Config(object):
     """Parent configuration class."""
     DEBUG = False
@@ -10,7 +13,7 @@ class Config(object):
 
     # generate random 24 character secret key
     SECRET = os.urandom(24)
-    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL')
+    SQLALCHEMY_DATABASE_URI = DATABASE_URI
 
 
 class DevelopmentConfig(Config):
