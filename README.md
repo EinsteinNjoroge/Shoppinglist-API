@@ -59,15 +59,14 @@ Open a browser and access **[this location](http://127.0.0.1:5000/)**.
 | ---------------------------------------- | ---------------------------------------- |
 | POST /auth/login                         | Logs a user in and generates a unique token |
 | POST /auth/register                      | Register a user                          |
-| POST /shoppinglists/                     | Create a new shopping list               |
-| GET /shoppinglists/                      | List all the created shopping lists that belongs to the logged in user |
-| GET /shoppinglists/<shopping-list id>    | Get a specific shopping list             |
-| PUT /shoppinglists/<shopping-list id>    | Updates the specified shopping list      |
-| DELETE /shoppinglists/<shopping-list id>/item/<item id> | Delete a specified item in a shopping list |
-| POST /shoppinglists/<shopping-list id>/items/ | Create a new item in shopping list       |
-| PUT  /shoppinglists/<shopping-list id>/items/<item id> | Delete an item in a shopping list        |
-| GET /shoppinglists/<shopping-list id>/items/ | list all items in a shopping list        |
-| DELETE /shoppinglist/<shopping-list id>  | Delete the specified shopping list       |
+| POST /shoppinglist/                      | Create a new shopping list               |
+| GET /shoppinglist/                       | List all the created shopping lists that belongs to the logged in user |
+| PUT /shoppinglist/`<shopping-list id>`   | Updates the specified shopping list      |
+| DELETE /shoppinglist/`<shopping-list id>`/item/`<item id>` | Delete a specified item in a shopping list |
+| POST /shoppinglist/`<shopping-list id>`/items/ | Create a new item in shopping list       |
+| PUT  /shoppinglist/`<shopping-list id>`/items/`<item id>` | Delete an item in a shopping list        |
+| GET /shoppinglist/`<shopping-list id>`/items/ | list all items in a shopping list        |
+| DELETE /shoppinglist/`<shopping-list id>` | Delete the specified shopping list       |
 
 
 
