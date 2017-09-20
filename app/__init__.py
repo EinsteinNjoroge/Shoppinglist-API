@@ -8,21 +8,23 @@ from instance.config import configurations
 db = SQLAlchemy()
 
 
-def create_instance_of_flask_api(configuration_name):
+def create_instance_of_flask_api(config_mode):
     """
     Instantiates Flask and sets configurations for the flask api
 
     Args:
-        configuration_name (str): Name of the preferred configuration for this instance
+        config_mode (str): Name of the preferred configuration for this instance
 
     Returns:
         FlaskAPI: instance of API
 
     """
     flask_api = FlaskAPI(__name__, instance_relative_config=True)
-    flask_api.config.from_object(configurations[configuration_name])
+    flask_api.config.from_object(configurations[config_mode])
     flask_api.config.from_pyfile('config.py')
     flask_api.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     db.init_app(flask_api)
 
     return flask_api
+
+
