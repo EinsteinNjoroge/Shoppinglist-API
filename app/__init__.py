@@ -91,7 +91,11 @@ def create_instance_of_flask_api(config_mode):
             response.status_code = 200
 
         if request.method == 'DELETE':
-            pass
+            shopping_list.delete()
+            response = {
+                "message": "shoppinglist {} has been deleted "
+                           "successfully".format(list_id)
+            }, 200
 
         return response
 
