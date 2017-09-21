@@ -69,13 +69,31 @@ def create_instance_of_flask_api(config_mode):
             abort(404)
 
         if request.method == 'PUT':
-            pass
+            title = str(request.data.get('title', ''))
+            shopping_list.title = title
+            shopping_list.save()
+
+            response = jsonify({
+                'id': shopping_list.id,
+                'title': shopping_list.title
+            })
+            response.status_code = 200
 
         if request.method == 'GET':
-            pass
+
+            # retrieve the list with the id provided
+            list_details = {
+                'id': shopping_list.id,
+                'title': shopping_list.title
+            }
+
+            response = jsonify(list_details)
+            response.status_code = 200
 
         if request.method == 'DELETE':
             pass
+
+        return response
 
     return flask_api
 
