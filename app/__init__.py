@@ -36,12 +36,12 @@ def create_instance_of_flask_api(config_mode):
             # Create a shoppinglist with title provided
             title = str(request.data.get('title', ''))
             if title:
-                shoppinglist = Shoppinglists(title=title)
-                shoppinglist.save()
+                shopping_list = Shoppinglists(title=title)
+                shopping_list.save()
                 response = jsonify(
                     {
-                      'id': shoppinglist.id,
-                      'title': shoppinglist.title
+                      'id': shopping_list.id,
+                      'title': shopping_list.title
                     }
                 )
                 response.status_code = 201
@@ -49,16 +49,33 @@ def create_instance_of_flask_api(config_mode):
             shopping_lists = Shoppinglists.get_all()
             results = []
 
-            for shoppinglist in shopping_lists:
+            for shopping_list in shopping_lists:
                 list_details = {
-                    'id': shoppinglist.id,
-                    'title': shoppinglist.title
+                    'id': shopping_list.id,
+                    'title': shopping_list.title
                 }
                 results.append(list_details)
             response = jsonify(results)
             response.status_code = 200
 
         return response
+
+    @flask_api.route('/shoppinglist/<int:list_id>',
+                     methods=['PUT', 'GET', 'DELETE'])
+    def shoppinglist(list_id):
+
+        shopping_list = Shoppinglists.query.filter_by(id=list_id).first()
+        if not shopping_list:
+            abort(404)
+
+        if request.method == 'PUT':
+            pass
+
+        if request.method == 'GET':
+            pass
+
+        if request.method == 'DELETE':
+            pass
 
     return flask_api
 
