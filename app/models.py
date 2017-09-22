@@ -1,4 +1,6 @@
 import random
+
+from flask import session
 from flask_bcrypt import Bcrypt
 from app import db
 
@@ -22,6 +24,11 @@ class User(db.Model):
     lastname = db.Column('lastname', db.String(10), nullable=False)
     password = db.Column('password', db.String(100), nullable=False)
 
+    # create virtual column (back-reference)
+    # for maintaining table relationship and data integrity
+    shoppinglists = db.relationship(
+        "Shoppinglists", backref="users", lazy="dynamic")
+
     def __init__(self, username, password, firstname, lastname):
         """Initialize the user """
         self.id = generate_random_id()
@@ -44,6 +51,14 @@ class Shoppinglists(db.Model):
     __tablename__ = 'shoppinglists'
     id = db.Column('id', db.Integer, primary_key=True)
     title = db.Column('title', db.String(100), nullable=False)
+    user_id = db.Column(
+        'user_id', db.Integer,
+        db.ForeignKey(
+            'shoppinglists.id',
+            onupdate="CASCADE",
+            ondelete="CASCADE"
+        ),
+        nullable=False)
 
     # create virtual column (back-reference)
     # for maintaining table relationship and data integrity
@@ -54,6 +69,7 @@ class Shoppinglists(db.Model):
         """Initialize with a title"""
         self.title = title
         self.id = generate_random_id()
+        self.user_id = 1  # session["current_user"]
 
     @staticmethod
     def get_all():

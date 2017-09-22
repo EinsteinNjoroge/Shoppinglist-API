@@ -16,11 +16,24 @@ class ShoppinglistTestCase(TestCase):
             db.create_all()
 
         self.client = self.app.test_client
-        self.create_resource = self.client().post(
-            '/shoppinglist/', data={'title': 'Back to school'})
-        self.get_resource = self.client().get('/shoppinglist/')
+        self.create_user_resource = self.client().post(
+            '/auth/register', data={
+                'username': 'test_user',
+                'password': 'test_password'
+            }
+        )
+
+        self.create_shoppinglist_resource = self.client().post(
+            '/shoppinglist/', data={
+                'title': 'Back to school'
+            }
+        )
+
+        self.get_shoppinglist_resource = self.client().get('/shoppinglist/')
+
         self.json_resource = json.loads(
-            self.create_resource.data.decode('utf-8').replace("'", "\"")
+            self.create_shoppinglist_resource.data.decode('utf-8').replace(
+                "'", "\"")
         )
 
     def tearDown(self):
@@ -32,29 +45,33 @@ class ShoppinglistTestCase(TestCase):
         # reset all instance variables
         self.app = None
         self.client = None
-        self.get_resource = None
-        self.create_resource = None
+        self.get_shoppinglist_resource = None
+        self.create_shoppinglist_resource = None
+
+    def test_create_user_endpoint(self):
+        pass
+
+    def test_api_can_create_user(self):
+        pass
+
+    def test_login_endpoint(self):
+        pass
+
+    def test_api_can_authenticate_user(self):
+        pass
 
     def test_create_shoppinglist_endpoint(self):
-        self.assertEqual(self.create_resource.status_code, 201)
+        self.assertEqual(self.create_shoppinglist_resource.status_code, 201)
 
     def test_shoppinglist_created(self):
-        self.assertIn('Back to school', str(self.create_resource.data))
+        self.assertIn('Back to school',
+                      str(self.create_shoppinglist_resource.data))
 
     def test_get_shoppinglist_endpoint(self):
-        self.assertEqual(self.get_resource.status_code, 200)
+        self.assertEqual(self.get_shoppinglist_resource.status_code, 200)
 
     def test_api_can_retrieve_all_shoppinglists(self):
-        self.assertIn('Back to school', str(self.get_resource.data))
-
-    def test_api_can_retrieve_specific_shoppinglist(self):
-        shoppinglist_id = self.json_resource['id']
-
-        #  retrieve an existing shoppinglist
-        shoppinglist = self.client().get(
-            '/shoppinglist/{}'.format(shoppinglist_id)
-        )
-        self.assertIn('Back to school', str(shoppinglist.data))
+        self.assertIn('Back to school', str(self.get_shoppinglist_resource.data))
 
     def test_update_specific_shoppinglist_endpoint(self):
 
@@ -105,3 +122,36 @@ class ShoppinglistTestCase(TestCase):
             '/shoppinglist/{}'.format(shoppinglist_id)
         )
         self.assertEqual(shoppinglist.status_code, 404)
+
+    def test_create_shoppinglist_item(self):
+        shoppinglist_id = self.json_resource['id']
+        create_item_resource = self.client().post(
+            '/shoppinglist/{}/items/'.format(shoppinglist_id),
+            data={'name': 'School Shoes'}
+        )
+        self.assertEqual(create_item_resource.status_code, 201)
+
+        self.assertIn('School Shoes', str(create_item_resource.data))
+
+    def test_create_shoppinglist_item(self):
+        shoppinglist_id = self.json_resource['id']
+        create_item_resource = self.client().post(
+            '/shoppinglist/{}/items/'.format(shoppinglist_id),
+            data={'name': 'School Shoes'}
+        )
+        self.assertEqual(create_item_resource.status_code, 201)
+
+        self.assertIn('School Shoes', str(create_item_resource.data))
+
+    def test_api_can_retrieve_items_in_a_shoppinglist(self):
+        shoppinglist_id = self.json_resource['id']
+        self.client().post(
+            '/shoppinglist/{}/items/'.format(shoppinglist_id),
+            data={'name': 'School Shoes'}
+        )
+
+        #  retrieve an existing shoppinglist
+        shoppinglist_items = self.client().get(
+            '/shoppinglist/{}/items/'.format(shoppinglist_id)
+        )
+        self.assertIn('School Shoes', str(shoppinglist_items.data))
