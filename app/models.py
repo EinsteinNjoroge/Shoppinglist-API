@@ -22,20 +22,20 @@ class User(db.Model):
     username = db.Column('username', db.String(50), unique=True)
     firstname = db.Column('firstname', db.String(10), nullable=False)
     lastname = db.Column('lastname', db.String(10), nullable=False)
-    password = db.Column('password', db.String(100), nullable=False)
+    password_hash = db.Column('password_hash', db.String(100), nullable=False)
 
     # create virtual column (back-reference)
     # for maintaining table relationship and data integrity
-    shoppinglists = db.relationship(
+    users = db.relationship(
         "Shoppinglists", backref="users", lazy="dynamic")
 
-    def __init__(self, username, password, firstname, lastname):
+    def __init__(self, username, password_hash, firstname='', lastname=''):
         """Initialize the user """
         self.id = generate_random_id()
         self.username = username
         self.firstname = firstname
         self.lastname = lastname
-        self.password = Bcrypt().generate_password_hash(password).decode()
+        self.password_hash = password_hash
 
     def save(self):
         db.session.add(self)
@@ -54,7 +54,7 @@ class Shoppinglists(db.Model):
     user_id = db.Column(
         'user_id', db.Integer,
         db.ForeignKey(
-            'shoppinglists.id',
+            'users.id',
             onupdate="CASCADE",
             ondelete="CASCADE"
         ),
