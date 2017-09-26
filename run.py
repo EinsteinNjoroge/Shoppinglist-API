@@ -1,7 +1,4 @@
-from app import create_instance_of_flask_api
-
-config_mode = config_mode = "development"
-app = create_instance_of_flask_api(config_mode)
+from app import flask_api
 
 if __name__ == '__main__':
-    app.run()
+    flask_api.run()

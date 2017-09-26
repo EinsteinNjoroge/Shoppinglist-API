@@ -3,86 +3,103 @@ from flask import request
 from flask import jsonify
 from flask import abort
 from flask_api import FlaskAPI
-from flask_sqlalchemy import SQLAlchemy
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
-from itsdangerous import BadSignature
-from itsdangerous import SignatureExpired
+from instance.config import configurations  # import configurations file
+from app.models import db
+from app.models import secret_key
+from app.models import User
+from app.models import Shoppinglists
 
-# import configurations file
-from instance.config import configurations
-
-# initialize sql-alchemy
-db = SQLAlchemy()
+config_mode = "development"  # Deployment mode
 
 
-def create_instance_of_flask_api(config_mode):
-    from app.models import User
-    from app.models import Shoppinglists
-    """
-    Instantiates Flask and sets configurations for the flask api
+flask_api = FlaskAPI(__name__, instance_relative_config=True)
+flask_api.config.from_object(configurations[config_mode])
+flask_api.config.from_pyfile('config.py')
+flask_api.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+flask_api.secret_key = secret_key
+db.init_app(flask_api)
 
-    Args:
-        config_mode (str): Name of the preferred configuration for this instance
 
-    Returns:
-        FlaskAPI: instance of API
+@flask_api.route('/user/register/', methods=['POST'])
+def create_user():
+    # Create a user account with the credentials provided
+    pword = str(request.data.get('password', ''))
+    username = str(request.data.get('username', ''))
 
-    """
-    flask_api = FlaskAPI(__name__, instance_relative_config=True)
-    flask_api.config.from_object(configurations[config_mode])
-    flask_api.config.from_pyfile('config.py')
-    flask_api.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    db.init_app(flask_api)
+    password_hash = sha1_hash(pword)
+    new_user = User(username=username, password_hash=password_hash)
+    new_user.save()
+    response = jsonify({
+        "message": "user {} has been created successfully".format(username)
+    })
+    response.status_code = 201
 
-    @flask_api.route('/user/register/', methods=['POST'])
-    def create_user():
-        # Create a user account with the credentials provided
-        pword = str(request.data.get('password', ''))
-        username = str(request.data.get('username', ''))
+    return response
 
-        password_hash = sha1_hash(pword)
-        new_user = User(username=username, password_hash=password_hash)
-        new_user.save()
-        response = {
-            "message": "user {} has been created successfully".format(username)
-        }, 201
 
-        return response
+@flask_api.route('/user/login/', methods=['POST'])
+def authenticate_user():
+    pword = str(request.data.get('password', ''))
+    username = str(request.data.get('username', ''))
 
-    @flask_api.route('/shoppinglist/', methods=['POST', 'GET'])
-    def shoppinglists():
+    response = jsonify({
+        "message": "Wrong credentials combination"
+    })
+    response.status_code = 401
 
-        if request.method == 'POST':
-            # Create a shoppinglist with title provided
-            title = str(request.data.get('title', ''))
-            if title:
-                shopping_list = Shoppinglists(title=title)
-                shopping_list.save()
-                response = jsonify(
-                    {
-                      'id': shopping_list.id,
-                      'title': shopping_list.title
-                    }
-                )
-                response.status_code = 201
-        else:
-            shopping_lists = Shoppinglists.get_all()
-            results = []
+    password_hash = sha1_hash(pword)
+    user = User.query.filter_by(password_hash=password_hash).first()
 
-            for shopping_list in shopping_lists:
-                list_details = {
-                    'id': shopping_list.id,
-                    'title': shopping_list.title
+    print(user.password_hash)
+
+    if user:
+        token = generate_auth_token(user).decode("utf-8")
+
+        response = jsonify({
+            "token": token
+        })
+        response.status_code = 200
+
+    return response
+
+
+@flask_api.route('/shoppinglist/', methods=['POST', 'GET'])
+def shoppinglists():
+    response = None
+
+    if request.method == 'POST':
+        # Create a shoppinglist with title provided
+        title = str(request.data.get('title', ''))
+        if title:
+            shopping_list = Shoppinglists(title=title)
+            shopping_list.save()
+            response = jsonify(
+                {
+                  'id': shopping_list.id,
+                  'title': shopping_list.title
                 }
-                results.append(list_details)
-            response = jsonify(results)
-            response.status_code = 200
+            )
+            response.status_code = 201
+    else:
+        shopping_lists = Shoppinglists.get_all()
+        results = []
 
-        return response
+        for shopping_list in shopping_lists:
+            list_details = {
+                'id': shopping_list.id,
+                'title': shopping_list.title
+            }
+            results.append(list_details)
+        response = jsonify(results)
+        response.status_code = 200
 
-    @flask_api.route('/shoppinglist/<int:list_id>',
-                     methods=['PUT', 'GET', 'DELETE'])
-    def shoppinglist(list_id):
+    return response
+
+
+@flask_api.route('/shoppinglist/<int:list_id>',
+                 methods=['PUT', 'GET', 'DELETE'])
+def shoppinglist(list_id):
 
         shopping_list = Shoppinglists.query.filter_by(id=list_id).first()
         if not shopping_list:
@@ -112,14 +129,13 @@ def create_instance_of_flask_api(config_mode):
 
         if request.method == 'DELETE':
             shopping_list.delete()
-            response = {
+            response = jsonify({
                 "message": "shoppinglist {} has been deleted "
                            "successfully".format(list_id)
-            }, 200
+            })
+            response.status_code = 200
 
         return response
-
-    return flask_api
 
 
 def sha1_hash(value):
@@ -143,6 +159,11 @@ def sha1_hash(value):
     hash_object = hashlib.sha1(value)
     hashed_value = hash_object.hexdigest()
     return hashed_value
+
+
+def generate_auth_token(user):
+    s = Serializer(secret_key, expires_in=600)
+    return s.dumps({'id': user.id})
 
 
 

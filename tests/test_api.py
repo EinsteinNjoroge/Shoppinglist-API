@@ -1,12 +1,15 @@
 import json
+import app
 from unittest import TestCase
-from app import create_instance_of_flask_api
+from app import flask_api
 from app import db
+
+app.config_mode = "testing"
 
 
 class UserTestCases(TestCase):
     def setUp(self):
-        self.app = create_instance_of_flask_api(config_mode="testing")
+        self.app = flask_api
 
         # binds the app to the current context
         with self.app.app_context():
