@@ -1,3 +1,4 @@
+from base64 import b64encode
 from flask import json
 from unittest import TestCase
 from app import launch_app
@@ -57,50 +58,47 @@ class TestAPI(TestCase):
         self.client = self.app.test_client
 
     def test_api_can_create_user(self):
+        user_data = {'username': 'test_user2', 'password': 'test_password'}
         create_user_resource = self.client().post(
-            '/user/register/', data={
-                'username': 'test_user',
-                'password': 'test_password'
-            }
+            '/user/register/', data=user_data
         )
 
         self.assertEqual(create_user_resource.status_code, 201)
         self.assertIn('test_user', str(create_user_resource.data))
         self.assertIn('id', str(create_user_resource.data))
 
-#     def test_api_can_authenticate_user(self):
-#         username = 'test_user'
-#         pword = 'test_password'
-#         data = {
-#             'username': username,
-#             'password': pword
-#         }
-#
-#         # create a user
-#         self.client().post('/user/register/', data=data)
-#
-#         authenticate_user_resource = self.client().post(
-#             '/user/login/', data=data
-#         )
-#
-#         self.assertEqual(authenticate_user_resource.status_code, 201)
-#         self.assertIn('login successful', str(authenticate_user_resource.data))
+    def test_api_can_authenticate_user(self):
+        user_data = {'username': 'test_user10', 'password': 'test_password'}
+
+        # create a user
+        self.client().post('/user/register/', data=user_data)
+
+        # Login to account created
+        authenticate_user_resource = self.client().post(
+            '/user/login/', data=user_data
+        )
+
+        self.assertEqual(authenticate_user_resource.status_code, 200)
+        self.assertIn('token', str(authenticate_user_resource.data))
 
     def test_shoppinglists(self):
-        # create a user and get user's id
-        test_user = {'username': 'test_user2', 'password': 'test_password'}
-        user_resource = json.loads(
-            self.client().post('/user/register/', data=test_user).data
-                .decode('utf-8').replace("'", "\"")
-        )
-        user_id = user_resource['id']
+        # create a user and login to account created
+        username = 'user20'
+        password = 'test_password'
+        test_user = {'username': username, 'password': password}
+        self.client().post('/user/register/', data=test_user)
+
+        headers = {
+            'Authorization': 'Basic ' + b64encode(
+                bytes("{0}:{1}".format(username, password), 'ascii')
+            ).decode('ascii')
+        }
 
         # create a shoppinglists
         create_shoppinglist_resource = self.client().post(
-            '/shoppinglist/', data={
-                'title': 'Back to school',
-                'user_id': user_id
-            }
+            '/shoppinglist/',
+            data={'title': 'Back to school'},
+            headers=headers
         )
 
         # get id of shoppinglist created
@@ -115,7 +113,10 @@ class TestAPI(TestCase):
         self.assertIn('Back to school', str(create_shoppinglist_resource.data))
 
         """test if API can retrieve created shoppinglists"""
-        get_shoppinglist_resource = self.client().get('/shoppinglist/')
+        get_shoppinglist_resource = self.client().get(
+            '/shoppinglist/',
+            headers=headers
+        )
         self.assertEqual(get_shoppinglist_resource.status_code, 200)
         self.assertIn('Back to school', str(get_shoppinglist_resource.data))
 
@@ -123,43 +124,51 @@ class TestAPI(TestCase):
         # Update current shoppinglist
         response = self.client().put(
             '/shoppinglist/{}'.format(shoppinglist_id),
-            data={'title': "Weekend party"}
+            data={'title': "Weekend party"},
+            headers=headers
         )
         self.assertEqual(response.status_code, 200)
 
         # assert shoppinglist was updated successfully
         shoppinglist = self.client().get(
-            '/shoppinglist/{}'.format(shoppinglist_id)
+            '/shoppinglist/{}'.format(shoppinglist_id),
+            headers=headers
         )
         self.assertIn('Weekend party', str(shoppinglist.data))
 
         """test API can delete shoppinglist"""
         # delete shoppinglist
-        response = self.client().delete('/shoppinglist/{}'.format(
-            shoppinglist_id))
+        response = self.client().delete(
+            '/shoppinglist/{}'.format(shoppinglist_id),
+            headers=headers
+        )
         self.assertEqual(response.status_code, 200)
 
         # assert shoppinglist was deleted successfully
         shoppinglist = self.client().get(
-            '/shoppinglist/{}'.format(shoppinglist_id)
+            '/shoppinglist/{}'.format(shoppinglist_id),
+            headers=headers
         )
         self.assertEqual(shoppinglist.status_code, 404)
 
     def test_shoppinglists_items(self):
-        # create a user and get user's id
-        test_user = {'username': 'test_user3', 'password': 'test_password'}
-        user_resource = json.loads(
-            self.client().post('/user/register/', data=test_user).data
-                .decode('utf-8').replace("'", "\"")
-        )
-        user_id = user_resource['id']
+        # create a user
+        username = 'user200'
+        password = 'test_password'
+        test_user = {'username': username, 'password': password}
+        self.client().post('/user/register/', data=test_user)
+
+        headers = {
+            'Authorization': 'Basic ' + b64encode(
+                bytes("{0}:{1}".format(username, password), 'ascii')
+            ).decode('ascii')
+        }
 
         # create a shoppinglist
         create_shoppinglist_resource = self.client().post(
-            '/shoppinglist/', data={
-                'title': 'Trip to Dubai',
-                'user_id': user_id
-            }
+            '/shoppinglist/',
+            data={'title': 'Trip to Dubai'},
+            headers=headers
         )
 
         # get id of shoppinglist created
@@ -172,9 +181,8 @@ class TestAPI(TestCase):
         """test API can create shoppinglist item"""
         create_item_resource = self.client().post(
             '/shoppinglist/{}/items/'.format(shoppinglist_id),
-            data={
-                'name': 'Touring Shoes'
-            }
+            data={'name': 'Touring Shoes'},
+            headers=headers
         )
         self.assertEqual(create_item_resource.status_code, 201)
         self.assertIn('Touring Shoes', str(create_item_resource.data))
@@ -188,7 +196,8 @@ class TestAPI(TestCase):
 
         """test API can retrieve shoppinglist items"""
         get_item_resource = self.client().get(
-            '/shoppinglist/{}/items/'.format(shoppinglist_id)
+            '/shoppinglist/{}/items/'.format(shoppinglist_id),
+            headers=headers
         )
         self.assertEqual(get_item_resource.status_code, 200)
         self.assertIn('Touring Shoes', str(get_item_resource.data))
@@ -196,25 +205,29 @@ class TestAPI(TestCase):
         """test API can update shoppinglist item"""
         update_item_resource = self.client().put(
             '/shoppinglist/{}/items/{}'.format(shoppinglist_id, item_id),
-            data={'name': 'Swimming floaters'}
+            data={'name': 'Swimming floaters'},
+            headers=headers
         )
         self.assertEqual(update_item_resource.status_code, 200)
 
         # assert item was updated successfully
         items = self.client().get(
-            '/shoppinglist/{}/items/'.format(shoppinglist_id)
+            '/shoppinglist/{}/items/'.format(shoppinglist_id),
+            headers=headers
         )
         self.assertIn('Swimming floaters', str(items.data))
 
         """test API can delete shoppinglist item"""
         delete_item_resource = self.client().delete(
-            '/shoppinglist/{}/items/{}'.format(shoppinglist_id, item_id)
+            '/shoppinglist/{}/items/{}'.format(shoppinglist_id, item_id),
+            headers=headers
         )
         self.assertEqual(delete_item_resource.status_code, 200)
 
         # asert item has been deleted successfully
         items = self.client().get(
-            '/shoppinglist/{}/items/'.format(shoppinglist_id)
+            '/shoppinglist/{}/items/'.format(shoppinglist_id),
+            headers=headers
         )
         self.assertNotIn('Swimming floaters', str(items.data))
 
