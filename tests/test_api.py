@@ -86,14 +86,7 @@ class TestAPI(TestCase):
 #         self.assertEqual(authenticate_user_resource.status_code, 201)
 #         self.assertIn('login successful', str(authenticate_user_resource.data))
 
-        # self.get_shoppinglist_resource = self.client().get('/shoppinglist/')
-        #
-        # self.json_shoppinglist_resource = json.loads(
-        #     self.create_shoppinglist_resource.data.decode('utf-8').replace(
-        #         "'", "\"")
-        # )
-
-    def test_shoppinglist_created(self):
+    def test_shoppinglists(self):
         # create a user and get user's id
         test_user = {'username': 'test_user2', 'password': 'test_password'}
         user_resource = json.loads(
@@ -102,6 +95,7 @@ class TestAPI(TestCase):
         )
         user_id = user_resource['id']
 
+        # create a shoppinglists
         create_shoppinglist_resource = self.client().post(
             '/shoppinglist/', data={
                 'title': 'Back to school',
@@ -109,65 +103,48 @@ class TestAPI(TestCase):
             }
         )
 
+        # get id of created shoppinglist
+        json_shoppinglist_resource = json.loads(
+            create_shoppinglist_resource.data.decode('utf-8').replace(
+                "'", "\"")
+        )
+        shoppinglist_id = json_shoppinglist_resource['id']
+
+        """test if API can create shoppinglists"""
         self.assertEqual(create_shoppinglist_resource.status_code, 201)
         self.assertIn('Back to school', str(create_shoppinglist_resource.data))
 
-    # def test_get_shoppinglist_endpoint(self):
-    #     self.assertEqual(self.get_shoppinglist_resource.status_code, 200)
-    #
-    # def test_api_can_retrieve_all_shoppinglists(self):
-    #     self.assertIn('Back to school', str(self.get_shoppinglist_resource.data))
-    #
-    # def test_update_specific_shoppinglist_endpoint(self):
-    #
-    #     shoppinglist_id = self.json_shoppinglist_resource['id']
-    #
-    #     # Update an already existing shoppinglist
-    #     response = self.client().put(
-    #         '/shoppinglist/{}'.format(shoppinglist_id),
-    #         data={'title': "Weekend party"}
-    #     )
-    #     self.assertEqual(response.status_code, 200)
-    #
-    # def test_api_can_update_specific_shoppinglist(self):
-    #
-    #     shoppinglist_id = self.json_shoppinglist_resource['id']
-    #
-    #     # Update an already existing shoppinglist
-    #     self.client().put(
-    #         '/shoppinglist/{}'.format(shoppinglist_id),
-    #         data={'title': "Weekend party"}
-    #     )
-    #
-    #     # assert shoppinglist was updated successfully
-    #     shoppinglist = self.client().get(
-    #         '/shoppinglist/{}'.format(shoppinglist_id)
-    #     )
-    #     self.assertIn('Weekend party', str(shoppinglist.data))
-    #
-    # def test_delete_specific_shoppinglist_endpoint(self):
-    #
-    #     shoppinglist_id = self.json_shoppinglist_resource['id']
-    #
-    #     # Delete a shoppinglist
-    #     response = self.client().delete('/shoppinglist/{}'.format(
-    #         shoppinglist_id))
-    #     self.assertEqual(response.status_code, 200)
-    #
-    # def test_api_can_delete_specific_shoppinglist(self):
-    #
-    #     shoppinglist_id = self.json_shoppinglist_resource['id']
-    #
-    #     # Delete a shoppinglist
-    #     self.client().delete('/shoppinglist/{}'.format(
-    #         shoppinglist_id))
-    #
-    #     # assert shoppinglist was deleted successfully
-    #     shoppinglist = self.client().get(
-    #         '/shoppinglist/{}'.format(shoppinglist_id)
-    #     )
-    #     self.assertEqual(shoppinglist.status_code, 404)
-    #
+        """test if API can retrieve created shoppinglists"""
+        get_shoppinglist_resource = self.client().get('/shoppinglist/')
+        self.assertEqual(get_shoppinglist_resource.status_code, 200)
+        self.assertIn('Back to school', str(get_shoppinglist_resource.data))
+
+        """test API can update shoppinglist"""
+        # Update current shoppinglist
+        response = self.client().put(
+            '/shoppinglist/{}'.format(shoppinglist_id),
+            data={'title': "Weekend party"}
+        )
+        self.assertEqual(response.status_code, 200)
+
+        # assert shoppinglist was updated successfully
+        shoppinglist = self.client().get(
+            '/shoppinglist/{}'.format(shoppinglist_id)
+        )
+        self.assertIn('Weekend party', str(shoppinglist.data))
+
+        """test API can delete shoppinglist"""
+        # delete shoppinglist
+        response = self.client().delete('/shoppinglist/{}'.format(
+            shoppinglist_id))
+        self.assertEqual(response.status_code, 200)
+
+        # assert shoppinglist was deleted successfully
+        shoppinglist = self.client().get(
+            '/shoppinglist/{}'.format(shoppinglist_id)
+        )
+        self.assertEqual(shoppinglist.status_code, 404)
+
     # def test_create_shoppinglist_item(self):
     #     shoppinglist_id = self.json_shoppinglist_resource['id']
     #     create_item_resource = self.client().post(
