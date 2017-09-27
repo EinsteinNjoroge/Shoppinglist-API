@@ -1,93 +1,96 @@
-import json
-import app
 from unittest import TestCase
-from app import flask_api
-from app import db
+from app import launch_app
+from app.models import db
+from app.models import User
+from app.models import Shoppinglists
+from app.models import ShoppingListItems
+from app.models import generate_random_id
 
-app.config_mode = "testing"
+
+config_mode = "testing"
 
 
-class UserTestCases(TestCase):
+class TestModels(TestCase):
     def setUp(self):
-        self.app = flask_api
+        self.user = User
+        self.shoppinglist = Shoppinglists
+        self.shoppinglist_items = ShoppingListItems
 
-        # binds the app to the current context
-        with self.app.app_context():
-            # create all tables
-            db.create_all()
+    def test_user_variables(self):
+        """check if model User has the required class variables"""""
+        self.assertTrue('id' in [attr for attr in dir(self.user)])
+        self.assertTrue('username' in [attr for attr in dir(self.user)])
+        self.assertTrue('password_hash' in [attr for attr in dir(self.user)])
+        self.assertTrue('firstname' in [attr for attr in dir(self.user)])
+        self.assertTrue('lastname' in [attr for attr in dir(self.user)])
 
-        self.client = self.app.test_client
+    def test_shoppinglist_variables(self):
+        """check if model ShoppingList has the required class variables"""
+        self.assertTrue('id' in [attr for attr in dir(self.shoppinglist)])
+        self.assertTrue('title' in [attr for attr in dir(self.shoppinglist)])
+        self.assertTrue('user_id' in [attr for attr in dir(self.shoppinglist)])
 
-        # self.json_user_resource = json.loads(
-        #     self.create_user_resource.data.decode('utf-8').replace(
-        #         "'", "\"")
-        # )
+    def test_shoppinglist_items_variables(self):
+        """check if model ShoppingListItems has the required class variables"""
+        self.assertTrue('id' in
+                        [attr for attr in dir(self.shoppinglist_items)])
+        self.assertTrue('name' in
+                        [attr for attr in dir(self.shoppinglist_items)])
+        self.assertTrue('shoppinglist_id' in
+                        [attr for attr in dir(self.shoppinglist_items)])
 
-    def test_api_can_create_user(self):
-        create_user_resource = self.client().post(
-            '/user/register/', data={
-                'username': 'test_user',
-                'password': 'test_password'
-            }
-        )
-
-        self.assertEqual(create_user_resource.status_code, 201)
-        self.assertIn('test_user', str(create_user_resource.data))
-
-    def test_api_can_authenticate_user(self):
-        username = 'test_user'
-        pword = 'test_password'
-        data = {
-            'username': username,
-            'password': pword
-        }
-
-        # create a user
-        self.client().post('/user/register/', data=data)
-
-        authenticate_user_resource = self.client().post(
-            '/user/login/', data=data
-        )
-
-        self.assertEqual(authenticate_user_resource.status_code, 201)
-        self.assertIn('login successful', str(authenticate_user_resource.data))
+    def test_generate_random_int(self):
+        """assert function `generate_random_id` returns an integer"""
+        self.assertIsInstance(generate_random_id(), int)
 
     def tearDown(self):
-        with self.app.app_context():
-            # drop all tables
-            db.session.remove()
-            db.drop_all()
-
-        # reset all instance variables
-        self.app = None
-        self.client = None
+        self.user = None
+        self.shoppinglist = None
+        self.shoppinglist_items = None
 
 
-# class ShoppinglistTestCase(TestCase):
-#     """test cases for my shoppinglist api"""
-#
+# class UserTestCases(TestCase):
 #     def setUp(self):
-#         self.app = create_instance_of_flask_api(config_mode="testing")
+#         self.app = launch_app(config_mode)
 #
-#         # binds the app to the current context
-#         with self.app.app_context():
-#             # create all tables
-#             db.create_all()
+#         with self.app.app_context():  # bind the app to the current context
+#             db.create_all()  # create all tables
 #
 #         self.client = self.app.test_client
 #
-#         self.create_shoppinglist_resource = self.client().post(
-#             '/shoppinglist/', data={
-#                 'title': 'Back to school'
+#         # self.json_user_resource = json.loads(
+#         #     self.create_user_resource.data.decode('utf-8').replace(
+#         #         "'", "\"")
+#         # )
+#
+#     def test_api_can_create_user(self):
+#         create_user_resource = self.client().post(
+#             '/user/register/', data={
+#                 'username': 'test_user',
+#                 'password': 'test_password'
 #             }
 #         )
 #
-#         self.get_shoppinglist_resource = self.client().get('/shoppinglist/')
+#         self.assertEqual(create_user_resource.status_code, 201)
+#         self.assertIn('test_user', str(create_user_resource.data))
 #
-#         self.json_shoppinglist_resource = json.loads(
-#             self.create_shoppinglist_resource.data.decode('utf-8').replace(
-#                 "'", "\"")
+#     def test_api_can_authenticate_user(self):
+#         username = 'test_user'
+#         pword = 'test_password'
+#         data = {
+#             'username': username,
+#             'password': pword
+#         }
+#
+#         # create a user
+#         self.client().post('/user/register/', data=data)
+#
+#         authenticate_user_resource = self.client().post(
+#             '/user/login/', data=data
 #         )
+#
+#         self.assertEqual(authenticate_user_resource.status_code, 201)
+#         self.assertIn('login successful', str(authenticate_user_resource.data))
 #
 #     def tearDown(self):
 #         with self.app.app_context():
@@ -98,9 +101,41 @@ class UserTestCases(TestCase):
 #         # reset all instance variables
 #         self.app = None
 #         self.client = None
-#         self.get_shoppinglist_resource = None
-#         self.create_shoppinglist_resource = None
 #
+
+class ShoppinglistTestCase(TestCase):
+    """test cases for shoppinglist"""
+
+    def setUp(self):
+        self.app = launch_app(config_mode)
+
+        with self.app.app_context():  # bind the app to the current context
+            db.create_all()  # create all tables
+
+        self.client = self.app.test_client
+
+        json.loads(self.client().post('/user/register/',
+                                      data={'username': 'test_user',
+                                            'password': 'test_password'}
+                                      ).data.decode('utf-8').replace("'", "\"")
+                   )
+
+        shoppinglist_id = self.json_shoppinglist_resource['id']
+
+        self.create_shoppinglist_resource = self.client().post(
+            '/shoppinglist/', data={
+                'title': 'Back to school'
+            }
+        )
+
+        self.get_shoppinglist_resource = self.client().get('/shoppinglist/')
+
+        self.json_shoppinglist_resource = json.loads(
+            self.create_shoppinglist_resource.data.decode('utf-8').replace(
+                "'", "\"")
+        )
+
+
     # def test_create_shoppinglist_endpoint(self):
     #     self.assertEqual(self.create_shoppinglist_resource.status_code, 201)
     #
@@ -196,3 +231,14 @@ class UserTestCases(TestCase):
     #         '/shoppinglist/{}/items/'.format(shoppinglist_id)
     #     )
     #     self.assertIn('School Shoes', str(shoppinglist_items.data))
+
+    def tearDown(self):
+        with self.app.app_context():
+            # drop all tables
+            db.session.remove()
+            db.drop_all()
+
+        self.app = None
+        self.client = None
+        self.get_shoppinglist_resource = None
+        self.create_shoppinglist_resource = None
