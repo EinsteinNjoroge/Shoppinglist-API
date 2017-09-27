@@ -113,8 +113,15 @@ def launch_app(config_mode):
                 })
                 response.status_code = 200
 
-            if request.method == 'GET':
+            elif request.method == 'DELETE':
+                shopping_list.delete()
+                response = jsonify({
+                    "message": "shoppinglist {} has been deleted "
+                               "successfully".format(list_id)
+                })
+                response.status_code = 200
 
+            else:
                 # retrieve the list with the id provided
                 list_details = {
                     'id': shopping_list.id,
@@ -122,14 +129,6 @@ def launch_app(config_mode):
                 }
 
                 response = jsonify(list_details)
-                response.status_code = 200
-
-            if request.method == 'DELETE':
-                shopping_list.delete()
-                response = jsonify({
-                    "message": "shoppinglist {} has been deleted "
-                               "successfully".format(list_id)
-                })
                 response.status_code = 200
 
             return response
@@ -189,7 +188,15 @@ def launch_app(config_mode):
             })
             response.status_code = 200
 
-        if request.method == 'GET':
+        elif request.method == 'DELETE':
+            item.delete()
+            response = jsonify({
+                "message": "item {} has been deleted "
+                           "successfully".format(item_id)
+            })
+            response.status_code = 200
+
+        else:
             # retrieve the list with the id provided
             list_details = {
                 'id': item.id,
@@ -197,14 +204,6 @@ def launch_app(config_mode):
             }
 
             response = jsonify(list_details)
-            response.status_code = 200
-
-        if request.method == 'DELETE':
-            item.delete()
-            response = jsonify({
-                "message": "item {} has been deleted "
-                           "successfully".format(item_id)
-            })
             response.status_code = 200
 
         return response
@@ -238,6 +237,3 @@ def sha1_hash(value):
 def generate_auth_token(user):
     s = Serializer(secret_key, expires_in=600)
     return s.dumps({'id': user.id})
-
-
-
