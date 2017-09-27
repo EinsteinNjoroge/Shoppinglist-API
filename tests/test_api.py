@@ -173,8 +173,7 @@ class TestAPI(TestCase):
         create_item_resource = self.client().post(
             '/shoppinglist/{}/items/'.format(shoppinglist_id),
             data={
-                'name': 'Touring Shoes',
-                'shoppinglist_id': shoppinglist_id
+                'name': 'Touring Shoes'
             }
         )
         self.assertEqual(create_item_resource.status_code, 201)

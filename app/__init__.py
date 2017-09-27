@@ -9,6 +9,7 @@ from app.models import db
 from app.models import secret_key
 from app.models import User
 from app.models import Shoppinglists
+from app.models import ShoppingListItems
 
 
 def launch_app(config_mode):
@@ -133,6 +134,81 @@ def launch_app(config_mode):
                 response.status_code = 200
 
             return response
+
+    @flask_api.route('/shoppinglist/<int:list_id>/items/',
+                     methods=['POST', 'GET'])
+    def shoppinglist_items(list_id):
+        response = None
+
+        if request.method == 'POST':
+            # Create shoppinglist item with the name provided
+            name = str(request.data.get('name', ''))
+            if name:
+                item = ShoppingListItems(name=name, shoppinglist_id=list_id)
+                item.save()
+                response = jsonify(
+                    {
+                        'id': item.id,
+                        'name': item.name
+                    }
+                )
+                response.status_code = 201
+        else:
+            items = ShoppingListItems.query.filter_by(shoppinglist_id=list_id)
+            results = []
+
+            for item in items:
+                list_details = {
+                    'id': item.id,
+                    'name': item.name
+                }
+                results.append(list_details)
+            response = jsonify(results)
+            response.status_code = 200
+
+        return response
+
+    @flask_api.route('/shoppinglist/<int:list_id>/items/<int:item_id>',
+                     methods=['PUT', 'GET', 'DELETE'])
+    def shoppinglist_item(list_id, item_id):
+
+        shopping_list = Shoppinglists.query.filter_by(id=list_id).first()
+        if not shopping_list:
+            abort(404)
+        item = ShoppingListItems.query.filter_by(id=item_id).first()
+        if not item:
+            abort(404)
+
+        if request.method == 'PUT':
+            name = str(request.data.get('name', ''))
+            item.name = name
+            item.save()
+
+            response = jsonify({
+                'id': item.id,
+                'name': item.name
+            })
+            response.status_code = 200
+
+        if request.method == 'GET':
+            # retrieve the list with the id provided
+            list_details = {
+                'id': item.id,
+                'name': item.name
+            }
+
+            response = jsonify(list_details)
+            response.status_code = 200
+
+        if request.method == 'DELETE':
+            item.delete()
+            response = jsonify({
+                "message": "item {} has been deleted "
+                           "successfully".format(item_id)
+            })
+            response.status_code = 200
+
+        return response
 
     return flask_api
 
