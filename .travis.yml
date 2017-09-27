@@ -4,9 +4,21 @@ python:
   - "3.6"
   - "3.3"
 
+services:
+  - "postgresql"
+
 # install dependencies
 install:
   - "pip install -r requirements.txt"
+
+before_script:
+  - "psql -c 'CREATE DATABASE test_db;' -U postgres"
+
+test:
+  adapter: postgresql
+  database: test_db
+  username: postgres
+  password: user123
 
 # run test and report test-coverage to coveralls.io
 script:
