@@ -25,7 +25,7 @@ class TestingConfig(Config):
     """Configurations for testing. Uses a separate database for testing"""
     TESTING = True
     SQLALCHEMY_DATABASE_URI = \
-        'postgresql://postgres:user123*-+@localhost/test_db'
+        'postgresql://test_user:123456@localhost/test_db'
     DEBUG = True
 
 
