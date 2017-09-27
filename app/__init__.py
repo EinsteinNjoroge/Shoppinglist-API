@@ -48,9 +48,8 @@ def launch_app(config_mode):
         response.status_code = 401
 
         password_hash = sha1_hash(pword)
-        user = User.query.filter_by(password_hash=password_hash).first()
-
-        print(user.password_hash)
+        user = User.query.filter_by(username=username,
+                                    password_hash=password_hash).first()
 
         if user:
             token = generate_auth_token(user).decode("utf-8")
