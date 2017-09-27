@@ -1,8 +1,6 @@
 import os
 import random
 from flask_sqlalchemy import SQLAlchemy
-from itsdangerous import BadSignature
-from itsdangerous import SignatureExpired
 
 
 db = SQLAlchemy()  # initialize sql-alchemy
@@ -47,20 +45,6 @@ class User(db.Model):
     def delete(self):
         db.session.delete(self)
         db.session.commit()
-
-    @staticmethod
-    def verify_auth_token(token):
-        s = Serializer(secret_key)
-
-        try:
-            data = s.loads(token)
-        except SignatureExpired:
-            return None  # valid token, but expired
-        except BadSignature:
-            return None  # invalid token
-
-        user = User.query.get(data['id'])
-        return user
 
 
 class Shoppinglists(db.Model):

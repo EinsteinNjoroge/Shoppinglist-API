@@ -3,7 +3,10 @@ from flask import request
 from flask import jsonify
 from flask import abort
 from flask_api import FlaskAPI
+from flask_httpauth import HTTPBasicAuth
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
+from itsdangerous import BadSignature
+from itsdangerous import SignatureExpired
 from instance.config import configurations  # import configurations file
 from app.models import db
 from app.models import secret_key
@@ -18,7 +21,9 @@ def launch_app(config_mode):
     flask_api.config.from_pyfile('config.py')
     flask_api.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     flask_api.secret_key = secret_key
+    user_logged_in = None
     db.init_app(flask_api)
+    auth = HTTPBasicAuth()
 
     @flask_api.route('/user/register/', methods=['POST'])
     def create_user():
@@ -42,26 +47,48 @@ def launch_app(config_mode):
         pword = str(request.data.get('password', ''))
         username = str(request.data.get('username', ''))
 
-        response = jsonify({
-            "message": "Wrong credentials combination"
-        })
-        response.status_code = 401
+        # @staticmethod
+        # def verify_auth_token(token):
+        #     s = Serializer(secret_key)
+        #
+        #     try:
+        #         data = s.loads(token)
+        #     except SignatureExpired:
+        #         return None  # valid token, but expired
+        #     except BadSignature:
+        #         return None  # invalid token
+        #
+        #     user = User.query.get(data['id'])
+        #     return user
 
-        password_hash = sha1_hash(pword)
-        user = User.query.filter_by(username=username,
-                                    password_hash=password_hash).first()
-
-        if user:
-            token = generate_auth_token(user).decode("utf-8")
-
+        if verify_password(username, pword):
+            token = generate_auth_token(user_logged_in.id).decode("utf-8")
             response = jsonify({
                 "token": token
             })
             response.status_code = 200
 
+        else:
+            response = jsonify({
+                "message": "Wrong credentials combination"
+            })
+            response.status_code = 401
+
         return response
 
+    @auth.verify_password
+    def verify_password(username, pword):
+        password_hash = sha1_hash(pword)
+        user = User.query.filter_by(username=username,
+                                    password_hash=password_hash).first()
+        if user:
+            global user_logged_in
+            user_logged_in = user
+            return True
+        return False
+
     @flask_api.route('/shoppinglist/', methods=['POST', 'GET'])
+    @auth.login_required
     def shoppinglists():
         response = None
 
@@ -96,6 +123,7 @@ def launch_app(config_mode):
 
     @flask_api.route('/shoppinglist/<int:list_id>',
                      methods=['PUT', 'GET', 'DELETE'])
+    @auth.login_required
     def shoppinglist(list_id):
 
             shopping_list = Shoppinglists.query.filter_by(id=list_id).first()
@@ -135,6 +163,7 @@ def launch_app(config_mode):
 
     @flask_api.route('/shoppinglist/<int:list_id>/items/',
                      methods=['POST', 'GET'])
+    @auth.login_required
     def shoppinglist_items(list_id):
         response = None
 
@@ -168,6 +197,7 @@ def launch_app(config_mode):
 
     @flask_api.route('/shoppinglist/<int:list_id>/items/<int:item_id>',
                      methods=['PUT', 'GET', 'DELETE'])
+    @auth.login_required
     def shoppinglist_item(list_id, item_id):
 
         shopping_list = Shoppinglists.query.filter_by(id=list_id).first()
