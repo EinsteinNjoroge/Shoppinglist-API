@@ -103,7 +103,7 @@ class TestAPI(TestCase):
             }
         )
 
-        # get id of created shoppinglist
+        # get id of shoppinglist created
         json_shoppinglist_resource = json.loads(
             create_shoppinglist_resource.data.decode('utf-8').replace(
                 "'", "\"")
@@ -145,38 +145,79 @@ class TestAPI(TestCase):
         )
         self.assertEqual(shoppinglist.status_code, 404)
 
-    # def test_create_shoppinglist_item(self):
-    #     shoppinglist_id = self.json_shoppinglist_resource['id']
-    #     create_item_resource = self.client().post(
-    #         '/shoppinglist/{}/items/'.format(shoppinglist_id),
-    #         data={'name': 'School Shoes'}
-    #     )
-    #     self.assertEqual(create_item_resource.status_code, 201)
-    #
-    #     self.assertIn('School Shoes', str(create_item_resource.data))
-    #
-    # def test_create_shoppinglist_item(self):
-    #     shoppinglist_id = self.json_shoppinglist_resource['id']
-    #     create_item_resource = self.client().post(
-    #         '/shoppinglist/{}/items/'.format(shoppinglist_id),
-    #         data={'name': 'School Shoes'}
-    #     )
-    #     self.assertEqual(create_item_resource.status_code, 201)
-    #
-    #     self.assertIn('School Shoes', str(create_item_resource.data))
-    #
-    # def test_api_can_retrieve_items_in_a_shoppinglist(self):
-    #     shoppinglist_id = self.json_shoppinglist_resource['id']
-    #     self.client().post(
-    #         '/shoppinglist/{}/items/'.format(shoppinglist_id),
-    #         data={'name': 'School Shoes'}
-    #     )
-    #
-    #     #  retrieve an existing shoppinglist
-    #     shoppinglist_items = self.client().get(
-    #         '/shoppinglist/{}/items/'.format(shoppinglist_id)
-    #     )
-    #     self.assertIn('School Shoes', str(shoppinglist_items.data))
+    def test_shoppinglists_items(self):
+        # create a user and get user's id
+        test_user = {'username': 'test_user3', 'password': 'test_password'}
+        user_resource = json.loads(
+            self.client().post('/user/register/', data=test_user).data
+                .decode('utf-8').replace("'", "\"")
+        )
+        user_id = user_resource['id']
+
+        # create a shoppinglist
+        create_shoppinglist_resource = self.client().post(
+            '/shoppinglist/', data={
+                'title': 'Trip to Dubai',
+                'user_id': user_id
+            }
+        )
+
+        # get id of shoppinglist created
+        json_shoppinglist_resource = json.loads(
+            create_shoppinglist_resource.data.decode('utf-8').replace(
+                "'", "\"")
+        )
+        shoppinglist_id = json_shoppinglist_resource['id']
+
+        """test API can create shoppinglist item"""
+        create_item_resource = self.client().post(
+            '/shoppinglist/{}/items/'.format(shoppinglist_id),
+            data={
+                'name': 'Touring Shoes',
+                'shoppinglist_id': shoppinglist_id
+            }
+        )
+        self.assertEqual(create_item_resource.status_code, 201)
+        self.assertIn('Touring Shoes', str(create_item_resource.data))
+
+        # get id of item created
+        json_item_resource = json.loads(
+            create_item_resource.data.decode('utf-8').replace(
+                "'", "\"")
+        )
+        item_id = json_item_resource['id']
+
+        """test API can retrieve shoppinglist items"""
+        get_item_resource = self.client().get(
+            '/shoppinglist/{}/items/'.format(shoppinglist_id)
+        )
+        self.assertEqual(get_item_resource.status_code, 200)
+        self.assertIn('Touring Shoes', str(get_item_resource.data))
+
+        """test API can update shoppinglist item"""
+        update_item_resource = self.client().put(
+            '/shoppinglist/{}/items/{}'.format(shoppinglist_id, item_id),
+            data={'name': 'Swimming floaters'}
+        )
+        self.assertEqual(update_item_resource.status_code, 200)
+
+        # assert item was updated successfully
+        items = self.client().get(
+            '/shoppinglist/{}/items/'.format(shoppinglist_id)
+        )
+        self.assertIn('Swimming floaters', str(items.data))
+
+        """test API can delete shoppinglist item"""
+        delete_item_resource = self.client().delete(
+            '/shoppinglist/{}/items/{}'.format(shoppinglist_id, item_id)
+        )
+        self.assertEqual(delete_item_resource.status_code, 200)
+
+        # asert item has been deleted successfully
+        items = self.client().get(
+            '/shoppinglist/{}/items/'.format(shoppinglist_id)
+        )
+        self.assertNotIn('Swimming floaters', str(items.data))
 
     def tearDown(self):
         with self.app.app_context():
