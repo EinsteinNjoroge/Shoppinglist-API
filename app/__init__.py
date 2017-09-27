@@ -29,7 +29,8 @@ def launch_app(config_mode):
         new_user = User(username=username, password_hash=password_hash)
         new_user.save()
         response = jsonify({
-            "message": "user {} has been created successfully".format(username)
+            "message": "user `{}` has been created".format(username),
+            "id": new_user.id
         })
         response.status_code = 201
 
@@ -67,8 +68,9 @@ def launch_app(config_mode):
         if request.method == 'POST':
             # Create a shoppinglist with title provided
             title = str(request.data.get('title', ''))
+            user_id = str(request.data.get('user_id', ''))
             if title:
-                shopping_list = Shoppinglists(title=title)
+                shopping_list = Shoppinglists(title=title, user_id=user_id)
                 shopping_list.save()
                 response = jsonify(
                     {

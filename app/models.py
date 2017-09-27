@@ -82,11 +82,11 @@ class Shoppinglists(db.Model):
     shoppinglists_items = db.relationship(
         "ShoppingListItems", backref="shoppinglists", lazy="dynamic")
 
-    def __init__(self, title):
+    def __init__(self, title, user_id):
         """Initialize with a title"""
         self.title = title
         self.id = generate_random_id()
-        self.user_id = 1  # session["current_user"]
+        self.user_id = user_id
 
     @staticmethod
     def get_all():

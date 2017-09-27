@@ -1,3 +1,4 @@
+from flask import json
 from unittest import TestCase
 from app import launch_app
 from app.models import db
@@ -5,9 +6,6 @@ from app.models import User
 from app.models import Shoppinglists
 from app.models import ShoppingListItems
 from app.models import generate_random_id
-
-
-config_mode = "testing"
 
 
 class TestModels(TestCase):
@@ -49,31 +47,27 @@ class TestModels(TestCase):
         self.shoppinglist_items = None
 
 
-# class UserTestCases(TestCase):
-#     def setUp(self):
-#         self.app = launch_app(config_mode)
-#
-#         with self.app.app_context():  # bind the app to the current context
-#             db.create_all()  # create all tables
-#
-#         self.client = self.app.test_client
-#
-#         # self.json_user_resource = json.loads(
-#         #     self.create_user_resource.data.decode('utf-8').replace(
-#         #         "'", "\"")
-#         # )
-#
-#     def test_api_can_create_user(self):
-#         create_user_resource = self.client().post(
-#             '/user/register/', data={
-#                 'username': 'test_user',
-#                 'password': 'test_password'
-#             }
-#         )
-#
-#         self.assertEqual(create_user_resource.status_code, 201)
-#         self.assertIn('test_user', str(create_user_resource.data))
-#
+class TestAPI(TestCase):
+    def setUp(self):
+        self.app = launch_app(config_mode="testing")
+
+        with self.app.app_context():  # bind the app to the current context
+            db.create_all()  # create all tables
+
+        self.client = self.app.test_client
+
+    def test_api_can_create_user(self):
+        create_user_resource = self.client().post(
+            '/user/register/', data={
+                'username': 'test_user',
+                'password': 'test_password'
+            }
+        )
+
+        self.assertEqual(create_user_resource.status_code, 201)
+        self.assertIn('test_user', str(create_user_resource.data))
+        self.assertIn('id', str(create_user_resource.data))
+
 #     def test_api_can_authenticate_user(self):
 #         username = 'test_user'
 #         pword = 'test_password'
@@ -91,58 +85,33 @@ class TestModels(TestCase):
 #
 #         self.assertEqual(authenticate_user_resource.status_code, 201)
 #         self.assertIn('login successful', str(authenticate_user_resource.data))
-#
-#     def tearDown(self):
-#         with self.app.app_context():
-#             # drop all tables
-#             db.session.remove()
-#             db.drop_all()
-#
-#         # reset all instance variables
-#         self.app = None
-#         self.client = None
-#
 
-class ShoppinglistTestCase(TestCase):
-    """test cases for shoppinglist"""
+        # self.get_shoppinglist_resource = self.client().get('/shoppinglist/')
+        #
+        # self.json_shoppinglist_resource = json.loads(
+        #     self.create_shoppinglist_resource.data.decode('utf-8').replace(
+        #         "'", "\"")
+        # )
 
-    def setUp(self):
-        self.app = launch_app(config_mode)
+    def test_shoppinglist_created(self):
+        # create a user and get user's id
+        test_user = {'username': 'test_user2', 'password': 'test_password'}
+        user_resource = json.loads(
+            self.client().post('/user/register/', data=test_user).data
+                .decode('utf-8').replace("'", "\"")
+        )
+        user_id = user_resource['id']
 
-        with self.app.app_context():  # bind the app to the current context
-            db.create_all()  # create all tables
-
-        self.client = self.app.test_client
-
-        json.loads(self.client().post('/user/register/',
-                                      data={'username': 'test_user',
-                                            'password': 'test_password'}
-                                      ).data.decode('utf-8').replace("'", "\"")
-                   )
-
-        shoppinglist_id = self.json_shoppinglist_resource['id']
-
-        self.create_shoppinglist_resource = self.client().post(
+        create_shoppinglist_resource = self.client().post(
             '/shoppinglist/', data={
-                'title': 'Back to school'
+                'title': 'Back to school',
+                'user_id': user_id
             }
         )
 
-        self.get_shoppinglist_resource = self.client().get('/shoppinglist/')
+        self.assertEqual(create_shoppinglist_resource.status_code, 201)
+        self.assertIn('Back to school', str(create_shoppinglist_resource.data))
 
-        self.json_shoppinglist_resource = json.loads(
-            self.create_shoppinglist_resource.data.decode('utf-8').replace(
-                "'", "\"")
-        )
-
-
-    # def test_create_shoppinglist_endpoint(self):
-    #     self.assertEqual(self.create_shoppinglist_resource.status_code, 201)
-    #
-    # def test_shoppinglist_created(self):
-    #     self.assertIn('Back to school',
-    #                   str(self.create_shoppinglist_resource.data))
-    #
     # def test_get_shoppinglist_endpoint(self):
     #     self.assertEqual(self.get_shoppinglist_resource.status_code, 200)
     #
@@ -240,5 +209,3 @@ class ShoppinglistTestCase(TestCase):
 
         self.app = None
         self.client = None
-        self.get_shoppinglist_resource = None
-        self.create_shoppinglist_resource = None
