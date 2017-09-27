@@ -47,24 +47,11 @@ def launch_app(config_mode):
         pword = str(request.data.get('password', ''))
         username = str(request.data.get('username', ''))
 
-        # @staticmethod
-        # def verify_auth_token(token):
-        #     s = Serializer(secret_key)
-        #
-        #     try:
-        #         data = s.loads(token)
-        #     except SignatureExpired:
-        #         return None  # valid token, but expired
-        #     except BadSignature:
-        #         return None  # invalid token
-        #
-        #     user = User.query.get(data['id'])
-        #     return user
-
         if verify_password(username, pword):
-            token = generate_auth_token(user_logged_in.id).decode("utf-8")
+            global user_logged_in
+            token = generate_auth_token(user_logged_in)
             response = jsonify({
-                "token": token
+                "token": token.decode('ascii')
             })
             response.status_code = 200
 
@@ -78,9 +65,14 @@ def launch_app(config_mode):
 
     @auth.verify_password
     def verify_password(username, pword):
-        password_hash = sha1_hash(pword)
-        user = User.query.filter_by(username=username,
-                                    password_hash=password_hash).first()
+        # Attempt to authenticate using token
+        user = verify_auth_token(username)
+
+        if not user:
+            # attempt authentication using password
+            password_hash = sha1_hash(pword)
+            user = User.query.filter_by(username=username,
+                                        password_hash=password_hash).first()
         if user:
             global user_logged_in
             user_logged_in = user
@@ -95,7 +87,8 @@ def launch_app(config_mode):
         if request.method == 'POST':
             # Create a shoppinglist with title provided
             title = str(request.data.get('title', ''))
-            user_id = str(request.data.get('user_id', ''))
+            global user_logged_in
+            user_id = user_logged_in.id
             if title:
                 shopping_list = Shoppinglists(title=title, user_id=user_id)
                 shopping_list.save()
@@ -267,3 +260,17 @@ def sha1_hash(value):
 def generate_auth_token(user):
     s = Serializer(secret_key, expires_in=600)
     return s.dumps({'id': user.id})
+
+
+def verify_auth_token(token):
+    s = Serializer(secret_key)
+
+    try:
+        data = s.loads(token)
+    except SignatureExpired:
+        return None  # valid token, but expired
+    except BadSignature:
+        return None  # invalid token
+
+    user = User.query.get(data['id'])
+    return user
