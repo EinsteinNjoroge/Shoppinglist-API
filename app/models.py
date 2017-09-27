@@ -14,7 +14,6 @@ def generate_random_id():
         :return
             (int): randomly generated integer
     """
-    # generate a random unique integer
     random_id = random.randrange(1, 100000000)
     return random_id
 
