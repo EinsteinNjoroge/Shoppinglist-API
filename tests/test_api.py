@@ -124,6 +124,30 @@ class TestAPI(TestCase):
         self.assertEqual(authenticate_user_resource.status_code, 200)
         self.assertIn('token', str(authenticate_user_resource.data))
 
+    def test_create_shoppinglists_with_blank_title(self):
+        # create a user and login to account created
+        username = 'user20nm'
+        password = 'test_password'
+        test_user = {'username': username, 'password': password}
+        self.client().post('/user/register/', data=test_user)
+
+        headers = {
+            'Authorization': 'Basic ' + b64encode(
+                bytes("{0}:{1}".format(username, password), 'ascii')
+            ).decode('ascii')
+        }
+
+        # create a shoppinglists
+        create_shoppinglist_resource = self.client().post(
+            '/shoppinglist/',
+            data=None,
+            headers=headers
+        )
+
+        self.assertEqual(create_shoppinglist_resource.status_code, 400)
+        self.assertIn('title must be provided',
+                      str(create_shoppinglist_resource.data))
+
     def test_shoppinglists(self):
         # create a user and login to account created
         username = 'user20'
@@ -140,7 +164,7 @@ class TestAPI(TestCase):
         # create a shoppinglists
         create_shoppinglist_resource = self.client().post(
             '/shoppinglist/',
-            data={'title': 'Back to school'},
+            data={'title': 'back to school'},
             headers=headers
         )
 
@@ -153,7 +177,7 @@ class TestAPI(TestCase):
 
         """test if API can create shoppinglists"""
         self.assertEqual(create_shoppinglist_resource.status_code, 201)
-        self.assertIn('Back to school', str(create_shoppinglist_resource.data))
+        self.assertIn('back to school', str(create_shoppinglist_resource.data))
 
         """test if API can retrieve created shoppinglists"""
         get_shoppinglist_resource = self.client().get(
@@ -161,13 +185,13 @@ class TestAPI(TestCase):
             headers=headers
         )
         self.assertEqual(get_shoppinglist_resource.status_code, 200)
-        self.assertIn('Back to school', str(get_shoppinglist_resource.data))
+        self.assertIn('back to school', str(get_shoppinglist_resource.data))
 
         """test API can update shoppinglist"""
         # Update current shoppinglist
         response = self.client().put(
             '/shoppinglist/{}'.format(shoppinglist_id),
-            data={'title': "Weekend party"},
+            data={'title': "weekend party"},
             headers=headers
         )
         self.assertEqual(response.status_code, 200)
@@ -177,7 +201,7 @@ class TestAPI(TestCase):
             '/shoppinglist/{}'.format(shoppinglist_id),
             headers=headers
         )
-        self.assertIn('Weekend party', str(shoppinglist.data))
+        self.assertIn('weekend party', str(shoppinglist.data))
 
         """test API can delete shoppinglist"""
         # delete shoppinglist
@@ -193,6 +217,37 @@ class TestAPI(TestCase):
             headers=headers
         )
         self.assertEqual(shoppinglist.status_code, 404)
+
+    def test_create_duplicate_shoppinglists(self):
+        # create a user and login to account created
+        username = 'user20h'
+        password = 'test_password'
+        test_user = {'username': username, 'password': password}
+        self.client().post('/user/register/', data=test_user)
+
+        headers = {
+            'Authorization': 'Basic ' + b64encode(
+                bytes("{0}:{1}".format(username, password), 'ascii')
+            ).decode('ascii')
+        }
+
+        # create a shoppinglists
+        self.client().post(
+            '/shoppinglist/',
+            data={'title': 'Trip to canada'},
+            headers=headers
+        )
+
+        # create a duplicate shoppinglists
+        create_shoppinglist_resource = self.client().post(
+            '/shoppinglist/',
+            data={'title': 'trip to canada'},
+            headers=headers
+        )
+
+        self.assertEqual(create_shoppinglist_resource.status_code, 409)
+        self.assertIn('`trip to canada` already exists',
+                      str(create_shoppinglist_resource.data))
 
     def test_shoppinglists_items(self):
         # create a user

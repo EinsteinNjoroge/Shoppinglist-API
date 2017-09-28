@@ -29,7 +29,7 @@ def launch_app(config_mode):
     def create_user():
         # Create a user account with the credentials provided
         pword = str(request.data.get('password', ''))
-        username = str(request.data.get('username', ''))
+        username = str(request.data.get('username', '')).lower().strip()
 
         if not username or not pword:
             response = jsonify({
@@ -109,20 +109,38 @@ def launch_app(config_mode):
     @flask_api.route('/shoppinglist/', methods=['POST', 'GET'])
     @auth.login_required
     def shoppinglists():
-        response = None
 
         if request.method == 'POST':
-            # Create a shoppinglist with title provided
-            title = str(request.data.get('title', ''))
             global user_logged_in
             user_id = user_logged_in.id
-            if title:
+
+            # Create a shoppinglist with title provided
+            title = str(request.data.get('title', '')).lower().strip()
+
+            if not title:
+                response = jsonify(
+                    {
+                        'error_msg': "shoppinglist title must be provided"
+                    }
+                )
+                response.status_code = 400
+
+            # check if similar shoppinglist owned by same user exists
+            elif Shoppinglists.query.filter_by(title=title,
+                                               user_id=user_id).first():
+                response = jsonify(
+                    {
+                        'error_msg': "`{}` already exists".format(title)
+                    }
+                )
+                response.status_code = 409
+            else:
                 shopping_list = Shoppinglists(title=title, user_id=user_id)
                 shopping_list.save()
                 response = jsonify(
                     {
-                      'id': shopping_list.id,
-                      'title': shopping_list.title
+                        'id': shopping_list.id,
+                        'title': shopping_list.title
                     }
                 )
                 response.status_code = 201
