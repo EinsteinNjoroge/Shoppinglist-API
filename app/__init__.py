@@ -110,9 +110,10 @@ def launch_app(config_mode):
     @auth.login_required
     def shoppinglists():
 
+        global user_logged_in
+        user_id = user_logged_in.id
+
         if request.method == 'POST':
-            global user_logged_in
-            user_id = user_logged_in.id
 
             # Create a shoppinglist with title provided
             title = str(request.data.get('title', '')).lower().strip()
@@ -145,7 +146,7 @@ def launch_app(config_mode):
                 )
                 response.status_code = 201
         else:
-            shopping_lists = Shoppinglists.get_all()
+            shopping_lists = Shoppinglists.query.filter_by(user_id=user_id)
             results = []
 
             for shopping_list in shopping_lists:
