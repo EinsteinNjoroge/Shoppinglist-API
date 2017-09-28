@@ -334,7 +334,7 @@ class TestAPI(TestCase):
             '/shoppinglist/{}/items/'.format(shoppinglist_id),
             headers=headers
         )
-        self.assertIn('Swimming floaters', str(items.data))
+        self.assertIn('swimming floaters', str(items.data))
 
         """test API can delete shoppinglist item"""
         delete_item_resource = self.client().delete(
@@ -348,7 +348,7 @@ class TestAPI(TestCase):
             '/shoppinglist/{}/items/'.format(shoppinglist_id),
             headers=headers
         )
-        self.assertNotIn('Swimming floaters', str(items.data))
+        self.assertNotIn('swimming floaters', str(items.data))
 
     def test_shoppinglist_item_edge_cases(self):
         # create a user and login to account created

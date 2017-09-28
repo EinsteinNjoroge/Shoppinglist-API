@@ -1,7 +1,6 @@
 import hashlib
 from flask import request
 from flask import jsonify
-from flask import abort
 from flask_api import FlaskAPI
 from flask_httpauth import HTTPBasicAuth
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
@@ -118,23 +117,10 @@ def launch_app(config_mode):
             # Create a shoppinglist with title provided
             title = str(request.data.get('title', '')).lower().strip()
 
-            if not title:
-                response = jsonify(
-                    {
-                        'error_msg': "shoppinglist title must be provided"
-                    }
-                )
-                response.status_code = 400
+            error_message = validate_title(title)
+            if error_message:
+                return error_message
 
-            # check if similar shoppinglist owned by same user exists
-            elif Shoppinglists.query.filter_by(title=title,
-                                               user_id=user_id).first():
-                response = jsonify(
-                    {
-                        'error_msg': "`{}` already exists".format(title)
-                    }
-                )
-                response.status_code = 409
             else:
                 shopping_list = Shoppinglists(title=title, user_id=user_id)
                 shopping_list.save()
@@ -179,6 +165,11 @@ def launch_app(config_mode):
 
         if request.method == 'PUT':
             title = str(request.data.get('title', '')).lower().strip()
+
+            error_message = validate_title(title)
+            if error_message:
+                return error_message
+
             shopping_list.title = title
             shopping_list.save()
 
@@ -227,22 +218,11 @@ def launch_app(config_mode):
         if request.method == 'POST':
             # Create shoppinglist item with the name provided
             name = str(request.data.get('name', '')).lower().strip()
-            if not name:
-                response = jsonify(
-                    {
-                        'error_msg': "Item name must be provided"
-                    }
-                )
-                response.status_code = 400
 
-            elif ShoppingListItems.query.filter_by(
-                    name=name, shoppinglist_id=list_id).first():
-                response = jsonify(
-                    {
-                        'error_msg': "Item `{}` already exists".format(name)
-                    }
-                )
-                response.status_code = 409
+            error_message = validate_item_name(name, list_id)
+
+            if error_message:
+                return error_message
 
             else:
                 item = ShoppingListItems(name=name, shoppinglist_id=list_id)
@@ -289,7 +269,12 @@ def launch_app(config_mode):
             return response
 
         if request.method == 'PUT':
-            name = str(request.data.get('name', ''))
+            name = str(request.data.get('name', '')).lower().strip()
+
+            error_message = validate_item_name(name, list_id)
+            if error_message:
+                return error_message
+
             item.name = name
             item.save()
 
@@ -320,6 +305,54 @@ def launch_app(config_mode):
         return response
 
     return flask_api
+
+
+def validate_title(title):
+    global user_logged_in
+    user_id = user_logged_in.id
+
+    response = None
+    if not title:
+        response = jsonify(
+            {
+                'error_msg': "shoppinglist title must be provided"
+            }
+        )
+        response.status_code = 400
+
+    # check if similar shoppinglist owned by same user exists
+    elif Shoppinglists.query.filter_by(title=title,
+                                       user_id=user_id).first():
+        response = jsonify(
+            {
+                'error_msg': "`{}` already exists".format(title)
+            }
+        )
+        response.status_code = 409
+
+    return response
+
+
+def validate_item_name(name, list_id):
+    response = None
+    if not name:
+        response = jsonify(
+            {
+                'error_msg': "Item name must be provided"
+            }
+        )
+        response.status_code = 400
+
+    elif ShoppingListItems.query.filter_by(
+            name=name, shoppinglist_id=list_id).first():
+        response = jsonify(
+            {
+                'error_msg': "Item `{}` already exists".format(name)
+            }
+        )
+        response.status_code = 409
+
+    return response
 
 
 def sha1_hash(value):
