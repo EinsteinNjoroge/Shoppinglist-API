@@ -31,14 +31,35 @@ def launch_app(config_mode):
         pword = str(request.data.get('password', ''))
         username = str(request.data.get('username', ''))
 
-        password_hash = sha1_hash(pword)
-        new_user = User(username=username, password_hash=password_hash)
-        new_user.save()
-        response = jsonify({
-            "message": "user `{}` has been created".format(username),
-            "id": new_user.id
-        })
-        response.status_code = 201
+        if not username or not pword:
+            response = jsonify({
+                "error_msg": "Please provide a valid username and password"
+            })
+            response.status_code = 400
+
+        elif len(pword) < 7:
+            response = jsonify({
+                "error_msg": "password must be at-least 6 characters long"
+            })
+            response.status_code = 409
+
+        # Check username is already registered
+        elif User.query.filter_by(username=username).first():
+            response = jsonify({
+                "error_msg": "username `{}` is already registered. Please "
+                             "provide a unique username".format(username)
+            })
+            response.status_code = 409
+
+        else:
+            password_hash = sha1_hash(pword)
+            new_user = User(username=username, password_hash=password_hash)
+            new_user.save()
+            response = jsonify({
+                "message": "user `{}` has been created".format(username),
+                "id": new_user.id
+            })
+            response.status_code = 201
 
         return response
 
@@ -47,7 +68,13 @@ def launch_app(config_mode):
         pword = str(request.data.get('password', ''))
         username = str(request.data.get('username', ''))
 
-        if verify_password(username, pword):
+        if not username or not pword:
+            response = jsonify({
+                "error_msg": "Please provide a valid username and password"
+            })
+            response.status_code = 400
+
+        elif verify_password(username, pword):
             global user_logged_in
             token = generate_auth_token(user_logged_in)
             response = jsonify({

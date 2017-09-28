@@ -57,7 +57,26 @@ class TestAPI(TestCase):
 
         self.client = self.app.test_client
 
-    def test_api_can_create_user(self):
+    def test_api_user_password_complexity(self):
+        user_data = {'username': 'test_user200', 'password': '123'}
+        create_user_resource = self.client().post(
+            '/user/register/', data=user_data
+        )
+
+        self.assertEqual(create_user_resource.status_code, 409)
+        self.assertIn('password must be at-least 6',
+                      str(create_user_resource.data))
+
+    def test_api_create_user_without_credentials(self):
+        create_user_resource = self.client().post(
+            '/user/register/', data=None
+        )
+
+        self.assertEqual(create_user_resource.status_code, 400)
+        self.assertIn('provide a valid username and password',
+                      str(create_user_resource.data))
+
+    def test_api_create_user(self):
         user_data = {'username': 'test_user2', 'password': 'test_password'}
         create_user_resource = self.client().post(
             '/user/register/', data=user_data
@@ -67,7 +86,31 @@ class TestAPI(TestCase):
         self.assertIn('test_user', str(create_user_resource.data))
         self.assertIn('id', str(create_user_resource.data))
 
-    def test_api_can_authenticate_user(self):
+    def test_api_create_duplicate_username(self):
+        # create a user
+        user_data1 = {'username': 'user100', 'password': 'test_password'}
+        self.client().post('/user/register/', data=user_data1)
+
+        # create another user with similar credentials
+        user_data2 = {'username': 'user100', 'password': 'test_password'}
+        create_user_resource = self.client().post(
+            '/user/register/', data=user_data2
+        )
+
+        self.assertEqual(create_user_resource.status_code, 409)
+        self.assertIn('username `{}` is already registered'.format('user100'),
+                      str(create_user_resource.data))
+
+    def test_api_authenticate_user_without_credentials(self):
+        create_user_resource = self.client().post(
+            '/user/login/', data=None
+        )
+
+        self.assertEqual(create_user_resource.status_code, 400)
+        self.assertIn('provide a valid username and password',
+                      str(create_user_resource.data))
+
+    def test_api_authenticate_user(self):
         user_data = {'username': 'test_user10', 'password': 'test_password'}
 
         # create a user
