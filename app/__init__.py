@@ -164,52 +164,87 @@ def launch_app(config_mode):
                      methods=['PUT', 'GET', 'DELETE'])
     @auth.login_required
     def shoppinglist(list_id):
+        global user_logged_in
+        user_id = user_logged_in.id
 
-            shopping_list = Shoppinglists.query.filter_by(id=list_id).first()
-            if not shopping_list:
-                abort(404)
-
-            if request.method == 'PUT':
-                title = str(request.data.get('title', ''))
-                shopping_list.title = title
-                shopping_list.save()
-
-                response = jsonify({
-                    'id': shopping_list.id,
-                    'title': shopping_list.title
-                })
-                response.status_code = 200
-
-            elif request.method == 'DELETE':
-                shopping_list.delete()
-                response = jsonify({
-                    "message": "shoppinglist {} has been deleted "
-                               "successfully".format(list_id)
-                })
-                response.status_code = 200
-
-            else:
-                # retrieve the list with the id provided
-                list_details = {
-                    'id': shopping_list.id,
-                    'title': shopping_list.title
-                }
-
-                response = jsonify(list_details)
-                response.status_code = 200
-
+        # check if shoppinglist with id <list_id> exists
+        shopping_list = Shoppinglists.query.filter_by(id=list_id,
+                                                      user_id=user_id).first()
+        if not shopping_list:
+            response = jsonify({
+                'error_msg': "Requested shoppinglist was not found"
+            })
+            response.status_code = 404
             return response
+
+        if request.method == 'PUT':
+            title = str(request.data.get('title', '')).lower().strip()
+            shopping_list.title = title
+            shopping_list.save()
+
+            response = jsonify({
+                'id': shopping_list.id,
+                'title': shopping_list.title
+            })
+            response.status_code = 200
+
+        elif request.method == 'DELETE':
+            shopping_list.delete()
+            response = jsonify({
+                "message": "shoppinglist {} has been deleted "
+                           "successfully".format(list_id)
+            })
+            response.status_code = 200
+
+        else:
+            # retrieve the list with the id provided
+            list_details = {
+                'id': shopping_list.id,
+                'title': shopping_list.title
+            }
+
+            response = jsonify(list_details)
+            response.status_code = 200
+
+        return response
 
     @flask_api.route('/shoppinglist/<int:list_id>/items/',
                      methods=['POST', 'GET'])
     @auth.login_required
     def shoppinglist_items(list_id):
-        response = None
+
+        global user_logged_in
+        user_id = user_logged_in.id
+        shopping_list = Shoppinglists.query.filter_by(id=list_id,
+                                                      user_id=user_id).first()
+        if not shopping_list:
+            response = jsonify({
+                'error_msg': "Requested shoppinglist was not found"
+            })
+            response.status_code = 404
+            return response
 
         if request.method == 'POST':
             # Create shoppinglist item with the name provided
-            name = str(request.data.get('name', ''))
-            if name:
+            name = str(request.data.get('name', '')).lower().strip()
+            if not name:
+                response = jsonify(
+                    {
+                        'error_msg': "Item name must be provided"
+                    }
+                )
+                response.status_code = 400
+
+            elif ShoppingListItems.query.filter_by(
+                    name=name, shoppinglist_id=list_id).first():
+                response = jsonify(
+                    {
+                        'error_msg': "Item `{}` already exists".format(name)
+                    }
+                )
+                response.status_code = 409
+
+            else:
                 item = ShoppingListItems(name=name, shoppinglist_id=list_id)
                 item.save()
                 response = jsonify(
@@ -219,6 +254,7 @@ def launch_app(config_mode):
                     }
                 )
                 response.status_code = 201
+
         else:
             items = ShoppingListItems.query.filter_by(shoppinglist_id=list_id)
             results = []
@@ -239,12 +275,18 @@ def launch_app(config_mode):
     @auth.login_required
     def shoppinglist_item(list_id, item_id):
 
-        shopping_list = Shoppinglists.query.filter_by(id=list_id).first()
-        if not shopping_list:
-            abort(404)
-        item = ShoppingListItems.query.filter_by(id=item_id).first()
-        if not item:
-            abort(404)
+        global user_logged_in
+        user_id = user_logged_in.id
+        shopping_list = Shoppinglists.query.filter_by(id=list_id,
+                                                      user_id=user_id).first()
+        item = ShoppingListItems.query.filter_by(
+            id=item_id, shoppinglist_id=list_id).first()
+        if not shopping_list or not item:
+            response = jsonify({
+                'error_msg': "Requested shoppinglist item was not found"
+            })
+            response.status_code = 404
+            return response
 
         if request.method == 'PUT':
             name = str(request.data.get('name', ''))

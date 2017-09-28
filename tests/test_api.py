@@ -218,6 +218,27 @@ class TestAPI(TestCase):
         )
         self.assertEqual(shoppinglist.status_code, 404)
 
+    def test_access_non_existent_shoppinglist(self):
+        # create a user and login to account created
+        username = 'user20cb'
+        password = 'test_password'
+        test_user = {'username': username, 'password': password}
+        self.client().post('/user/register/', data=test_user)
+
+        headers = {
+            'Authorization': 'Basic ' + b64encode(
+                bytes("{0}:{1}".format(username, password), 'ascii')
+            ).decode('ascii')
+        }
+
+        get_shoppinglist_resource = self.client().get(
+            '/shoppinglist/123456789',
+            headers=headers
+        )
+        self.assertEqual(get_shoppinglist_resource.status_code, 404)
+        self.assertIn('Requested shoppinglist was not found',
+                      str(get_shoppinglist_resource.data))
+
     def test_create_duplicate_shoppinglists(self):
         # create a user and login to account created
         username = 'user20h'
@@ -279,11 +300,11 @@ class TestAPI(TestCase):
         """test API can create shoppinglist item"""
         create_item_resource = self.client().post(
             '/shoppinglist/{}/items/'.format(shoppinglist_id),
-            data={'name': 'Touring Shoes'},
+            data={'name': 'touring shoes'},
             headers=headers
         )
         self.assertEqual(create_item_resource.status_code, 201)
-        self.assertIn('Touring Shoes', str(create_item_resource.data))
+        self.assertIn('touring shoes', str(create_item_resource.data))
 
         # get id of item created
         json_item_resource = json.loads(
@@ -298,7 +319,7 @@ class TestAPI(TestCase):
             headers=headers
         )
         self.assertEqual(get_item_resource.status_code, 200)
-        self.assertIn('Touring Shoes', str(get_item_resource.data))
+        self.assertIn('touring shoes', str(get_item_resource.data))
 
         """test API can update shoppinglist item"""
         update_item_resource = self.client().put(
@@ -328,6 +349,50 @@ class TestAPI(TestCase):
             headers=headers
         )
         self.assertNotIn('Swimming floaters', str(items.data))
+
+    def test_shoppinglist_item_edge_cases(self):
+        # create a user and login to account created
+        username = 'user20chb'
+        password = 'test_password'
+        test_user = {'username': username, 'password': password}
+        self.client().post('/user/register/', data=test_user)
+
+        headers = {
+            'Authorization': 'Basic ' + b64encode(
+                bytes("{0}:{1}".format(username, password), 'ascii')
+            ).decode('ascii')
+        }
+
+        create_shoppinglist_resource = self.client().post(
+            '/shoppinglist/',
+            data={'title': 'Trip to Dubai'},
+            headers=headers
+        )
+
+        # get id of shoppinglist created
+        json_shoppinglist_resource = json.loads(
+            create_shoppinglist_resource.data.decode('utf-8').replace(
+                "'", "\"")
+        )
+        shoppinglist_id = json_shoppinglist_resource['id']
+
+        # attempt to retrieve item that does not exist
+        get_shoppinglist_resource = self.client().get(
+            '/shoppinglist/{}/items/12345'.format(shoppinglist_id),
+            headers=headers
+        )
+        self.assertEqual(get_shoppinglist_resource.status_code, 404)
+        self.assertIn('Requested shoppinglist item was not found',
+                      str(get_shoppinglist_resource.data))
+
+        # create item with blank name
+        create_item_resource = self.client().post(
+            '/shoppinglist/{}/items/'.format(shoppinglist_id),
+            data=None,
+            headers=headers
+        )
+        self.assertEqual(create_item_resource.status_code, 400)
+        self.assertIn('name must be provided', str(create_item_resource.data))
 
     def tearDown(self):
         with self.app.app_context():
