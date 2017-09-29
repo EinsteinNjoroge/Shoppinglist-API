@@ -14,6 +14,7 @@ from app.models import Shoppinglists
 from app.models import ShoppingListItems
 
 secret_key = os.urandom(24)  # create a random secret key for the application
+user_logged_in = None
 
 
 def launch_app(config_mode):
@@ -22,7 +23,6 @@ def launch_app(config_mode):
     flask_api.config.from_pyfile('config.py')
     flask_api.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     flask_api.secret_key = secret_key
-    user_logged_in = None
     db.init_app(flask_api)
     auth = HTTPBasicAuth()
 
@@ -76,7 +76,6 @@ def launch_app(config_mode):
             response.status_code = 400
 
         elif verify_password(username, pword):
-            global user_logged_in
             token = generate_auth_token(user_logged_in)
             response = jsonify({
                 "token": token.decode('ascii')
@@ -111,7 +110,6 @@ def launch_app(config_mode):
     @auth.login_required
     def shoppinglists():
 
-        global user_logged_in
         user_id = user_logged_in.id
         shopping_lists = None
         limit = None
@@ -146,11 +144,12 @@ def launch_app(config_mode):
                 if 'q' in args:
                     # search for shoppinglists that contain keyword provided
                     keyword = str(args['q']).lower()
+
                     if limit:
                         shopping_lists = Shoppinglists.query.filter(
                             Shoppinglists.title.like("%{}%".format(keyword)),
                             Shoppinglists.user_id == user_id
-                        ).limit(limit)
+                        ).limit(limit).all()
                     else:
                         shopping_lists = Shoppinglists.query.filter(
                             Shoppinglists.title.like("%{}%".format(keyword)),
@@ -173,7 +172,7 @@ def launch_app(config_mode):
                 else:
                     # Retrieve all shoppinglists
                     shopping_lists = Shoppinglists.query.filter_by(
-                        user_id=user_id)
+                        user_id=user_id).all()
 
             results = []
             for shopping_list in shopping_lists:
@@ -191,7 +190,6 @@ def launch_app(config_mode):
                      methods=['PUT', 'GET', 'DELETE'])
     @auth.login_required
     def shoppinglist(list_id):
-        global user_logged_in
         user_id = user_logged_in.id
 
         # check if shoppinglist with id <list_id> exists
@@ -246,7 +244,6 @@ def launch_app(config_mode):
     @auth.login_required
     def shoppinglist_items(list_id):
 
-        global user_logged_in
         user_id = user_logged_in.id
         shopping_list = Shoppinglists.query.filter_by(id=list_id,
                                                       user_id=user_id).first()
@@ -316,7 +313,6 @@ def launch_app(config_mode):
     @auth.login_required
     def shoppinglist_item(list_id, item_id):
 
-        global user_logged_in
         user_id = user_logged_in.id
         shopping_list = Shoppinglists.query.filter_by(id=list_id,
                                                       user_id=user_id).first()
@@ -369,7 +365,6 @@ def launch_app(config_mode):
 
 
 def validate_title(title):
-    global user_logged_in
     user_id = user_logged_in.id
 
     response = None
