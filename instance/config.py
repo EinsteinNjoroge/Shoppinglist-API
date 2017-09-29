@@ -1,7 +1,7 @@
 import os
 
 
-DATABASE_URI = 'postgresql://postgres:user123*-+@localhost/flask_api'
+DATABASE_URL = 'postgresql://postgres:user123*-+@localhost/flask_api'
 
 
 class Config(object):
@@ -13,7 +13,7 @@ class Config(object):
 
     # generate random 24 character secret key
     SECRET = os.urandom(24)
-    SQLALCHEMY_DATABASE_URI = DATABASE_URI
+    SQLALCHEMY_DATABASE_URI = DATABASE_URL
 
 
 class DevelopmentConfig(Config):

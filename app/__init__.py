@@ -113,6 +113,8 @@ def launch_app(config_mode):
 
         global user_logged_in
         user_id = user_logged_in.id
+        shopping_lists = None
+        limit = None
 
         if request.method == 'POST':
 
@@ -136,25 +138,42 @@ def launch_app(config_mode):
         else:
             # check if a search keyword has been provided
             args = request.args
-            if not args:
-                # Retrieve all shoppinglists
-                shopping_lists = Shoppinglists.query.filter_by(user_id=user_id)
+            if args:
+                if 'limit' in args:
+                    # limit number of results returned
+                    limit = int(args['limit'])
 
-            else:
-                # search for shoppinglists that contain keyword provided
-                keyword = str(args['q']).lower()
-                shopping_lists = Shoppinglists.query.filter(
-                    Shoppinglists.title.like("%{}%".format(keyword)),
-                    Shoppinglists.user_id == user_id
-                ).all()
+                if 'q' in args:
+                    # search for shoppinglists that contain keyword provided
+                    keyword = str(args['q']).lower()
+                    if limit:
+                        shopping_lists = Shoppinglists.query.filter(
+                            Shoppinglists.title.like("%{}%".format(keyword)),
+                            Shoppinglists.user_id == user_id
+                        ).limit(limit)
+                    else:
+                        shopping_lists = Shoppinglists.query.filter(
+                            Shoppinglists.title.like("%{}%".format(keyword)),
+                            Shoppinglists.user_id == user_id
+                        ).all()
 
-                if len(shopping_lists) < 1:
-                    response = jsonify({
-                        'error_msg': "There is no shoppinglist that matches"
-                                     " the keyword `{}`.".format(keyword)
-                    })
-                    response.status_code = 404
-                    return response
+                    if len(shopping_lists) < 1:
+                        response = jsonify({
+                            'error_msg': "There is no shoppinglist that matches"
+                                         " the keyword `{}`.".format(keyword)
+                        })
+                        response.status_code = 404
+                        return response
+
+            if not shopping_lists:
+                if limit:
+                    # Limit number of shoppinglists returned
+                    shopping_lists = Shoppinglists.query.filter_by(
+                        user_id=user_id).limit(limit)
+                else:
+                    # Retrieve all shoppinglists
+                    shopping_lists = Shoppinglists.query.filter_by(
+                        user_id=user_id)
 
             results = []
             for shopping_list in shopping_lists:

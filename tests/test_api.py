@@ -324,6 +324,41 @@ class TestAPI(TestCase):
         self.assertIn('trip to mombasa',
                       str(search_shoppinglist_resource.data))
 
+    def test_shoppinglists_pagination(self):
+        # create a user and login to account created
+        username = 'test_pagination'
+        password = 'test_password'
+        test_user = {'username': username, 'password': password}
+        self.client().post('/user/register/', data=test_user)
+
+        headers = {
+            'Authorization': 'Basic ' + b64encode(
+                bytes("{0}:{1}".format(username, password), 'ascii')
+            ).decode('ascii')
+        }
+
+        # create 1000 shoppinglists
+        i = 0
+        while i < 1000:
+            data = {'title': 'trip {} to Dubai'.format(i)}
+            self.client().post('/shoppinglist/', data=data, headers=headers)
+            i += 1
+
+        # get shoppinglists with pagination
+        get_paginated_shoppinglist_resource = self.client().get(
+            '/shoppinglist/?limit=100',
+            headers=headers
+        )
+
+        self.assertEqual(get_paginated_shoppinglist_resource.status_code, 200)
+
+        json_data = json.loads(
+            get_paginated_shoppinglist_resource.data.decode(
+                'utf-8').replace("'", "\"")
+        )
+
+        self.assertEqual(len(json_data), 100)
+
     def test_crud_methods_of_shoppinglist_items(self):
         # create a user
         username = 'user200'
@@ -450,7 +485,7 @@ class TestAPI(TestCase):
 
     def test_search_items(self):
         # create a user and login to account created
-        username = 'test_search2'
+        username = 'test_search30'
         password = 'test_password'
         test_user = {'username': username, 'password': password}
         self.client().post('/user/register/', data=test_user)
