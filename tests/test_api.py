@@ -148,7 +148,7 @@ class TestAPI(TestCase):
         self.assertIn('title must be provided',
                       str(create_shoppinglist_resource.data))
 
-    def test_shoppinglists(self):
+    def test_crud_methods_of_shoppinglists(self):
         # create a user and login to account created
         username = 'user20'
         password = 'test_password'
@@ -270,7 +270,61 @@ class TestAPI(TestCase):
         self.assertIn('`trip to canada` already exists',
                       str(create_shoppinglist_resource.data))
 
-    def test_shoppinglists_items(self):
+    def test_search_shoppinglists_non_existent_item(self):
+        # create a user and login to account created
+        username = 'test_search'
+        password = 'test_password'
+        test_user = {'username': username, 'password': password}
+        self.client().post('/user/register/', data=test_user)
+
+        headers = {
+            'Authorization': 'Basic ' + b64encode(
+                bytes("{0}:{1}".format(username, password), 'ascii')
+            ).decode('ascii')
+        }
+
+        # search shoppinglist
+        search_shoppinglist_resource = self.client().get(
+            '/shoppinglist/?q=shoppinglist one',
+            headers=headers
+        )
+
+        self.assertIn('no shoppinglist that matches the keyword '
+                      '`shoppinglist one`',
+                      str(search_shoppinglist_resource.data))
+        self.assertEqual(search_shoppinglist_resource.status_code, 404)
+
+    def test_search_shoppinglists(self):
+        # create a user and login to account created
+        username = 'test_search2'
+        password = 'test_password'
+        test_user = {'username': username, 'password': password}
+        self.client().post('/user/register/', data=test_user)
+
+        headers = {
+            'Authorization': 'Basic ' + b64encode(
+                bytes("{0}:{1}".format(username, password), 'ascii')
+            ).decode('ascii')
+        }
+
+        # create a shoppinglists
+        self.client().post(
+            '/shoppinglist/',
+            data={'title': 'trip to mombasa'},
+            headers=headers
+        )
+
+        # search shoppinglist
+        search_shoppinglist_resource = self.client().get(
+            '/shoppinglist/?q=trip',
+            headers=headers
+        )
+
+        self.assertEqual(search_shoppinglist_resource.status_code, 200)
+        self.assertIn('trip to mombasa',
+                      str(search_shoppinglist_resource.data))
+
+    def test_crud_methods_of_shoppinglist_items(self):
         # create a user
         username = 'user200'
         password = 'test_password'

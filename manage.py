@@ -1,12 +1,10 @@
 from flask_script import Manager
 from flask_migrate import Migrate
 from flask_migrate import MigrateCommand
-from app import db
-from app import create_instance_of_flask_api
-# Import models so that Flask-Migrate knows which models are being migrated
-from app import models
+from app.models import db
+from app import launch_app
 
-app = create_instance_of_flask_api(config_mode="development")
+app = launch_app(config_mode="development")
 migrate = Migrate(app, db)
 manager = Manager(app)
 

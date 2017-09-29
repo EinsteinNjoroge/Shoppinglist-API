@@ -1,4 +1,5 @@
 import hashlib
+import os
 from flask import request
 from flask import jsonify
 from flask_api import FlaskAPI
@@ -8,10 +9,11 @@ from itsdangerous import BadSignature
 from itsdangerous import SignatureExpired
 from instance.config import configurations  # import configurations file
 from app.models import db
-from app.models import secret_key
 from app.models import User
 from app.models import Shoppinglists
 from app.models import ShoppingListItems
+
+secret_key = os.urandom(24)  # create a random secret key for the application
 
 
 def launch_app(config_mode):
@@ -132,9 +134,29 @@ def launch_app(config_mode):
                 )
                 response.status_code = 201
         else:
-            shopping_lists = Shoppinglists.query.filter_by(user_id=user_id)
-            results = []
+            # check if a search keyword has been provided
+            args = request.args
+            if not args:
+                # Retrieve all shoppinglists
+                shopping_lists = Shoppinglists.query.filter_by(user_id=user_id)
 
+            else:
+                # search for shoppinglists that contain keyword provided
+                keyword = str(args['q']).lower()
+                shopping_lists = Shoppinglists.query.filter(
+                    Shoppinglists.title.like("%{}%".format(keyword)),
+                    Shoppinglists.user_id == user_id
+                ).all()
+
+                if len(shopping_lists) < 1:
+                    response = jsonify({
+                        'error_msg': "There is no shoppinglist that matches"
+                                     " the keyword `{}`.".format(keyword)
+                    })
+                    response.status_code = 404
+                    return response
+
+            results = []
             for shopping_list in shopping_lists:
                 list_details = {
                     'id': shopping_list.id,
@@ -180,6 +202,7 @@ def launch_app(config_mode):
             response.status_code = 200
 
         elif request.method == 'DELETE':
+
             shopping_list.delete()
             response = jsonify({
                 "message": "shoppinglist {} has been deleted "
