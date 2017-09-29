@@ -275,26 +275,56 @@ def launch_app(config_mode):
                 response.status_code = 201
 
         else:
+            items = None
+            limit = None
+
             # check if a search keyword has been provided
             args = request.args
-            if not args:
-                items = ShoppingListItems.query.filter_by(
-                    shoppinglist_id=list_id)
-            else:
-                # search for item that contain keyword provided
-                keyword = str(args['q']).lower()
-                items = ShoppingListItems.query.filter(
-                    ShoppingListItems.name.like("%{}%".format(keyword)),
-                    ShoppingListItems.shoppinglist_id == list_id
-                ).all()
+            if args:
 
-                if len(items) < 1:
-                    response = jsonify({
-                        'error_msg': "No item matches"
-                                     " the keyword `{}`.".format(keyword)
-                    })
-                    response.status_code = 404
-                    return response
+                if 'limit' in args:
+                    # limit number of results returned
+                    limit = int(args['limit'])
+
+                if 'q' in args:
+                    # search for item that contain keyword provided
+                    keyword = str(args['q']).lower()
+
+                    if limit:
+                        # limit number of results returned
+                        items = ShoppingListItems.query.filter(
+                            ShoppingListItems.name.like(
+                                "%{}%".format(keyword)),
+                            ShoppingListItems.shoppinglist_id == list_id
+                        ).limit(limit).all()
+
+                    else:
+                        # get all results that match keyword
+                        items = ShoppingListItems.query.filter(
+                            ShoppingListItems.name.like(
+                                "%{}%".format(keyword)
+                            ), ShoppingListItems.shoppinglist_id == list_id
+                        ).all()
+
+                    # if no items contains keyword
+                    if len(items) < 1:
+                        response = jsonify({
+                            'error_msg': "No item matches"
+                                         " the keyword `{}`.".format(keyword)
+                        })
+                        response.status_code = 404
+                        return response
+
+            if not items:
+
+                if limit:
+                    # limit number or results to be returned
+                    items = ShoppingListItems.query.filter_by(
+                        shoppinglist_id=list_id).limit(limit).all()
+                else:
+                    #  return all results
+                    items = ShoppingListItems.query.filter_by(
+                        shoppinglist_id=list_id)
 
             results = []
             for item in items:
