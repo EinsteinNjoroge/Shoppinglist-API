@@ -270,7 +270,7 @@ class TestAPI(TestCase):
         self.assertIn('`trip to canada` already exists',
                       str(create_shoppinglist_resource.data))
 
-    def test_search_shoppinglists_non_existent_item(self):
+    def test_search_for_non_existent_shoppinglists(self):
         # create a user and login to account created
         username = 'test_search'
         password = 'test_password'
@@ -447,6 +447,60 @@ class TestAPI(TestCase):
         )
         self.assertEqual(create_item_resource.status_code, 400)
         self.assertIn('name must be provided', str(create_item_resource.data))
+
+    def test_search_items(self):
+        # create a user and login to account created
+        username = 'test_search2'
+        password = 'test_password'
+        test_user = {'username': username, 'password': password}
+        self.client().post('/user/register/', data=test_user)
+
+        headers = {
+            'Authorization': 'Basic ' + b64encode(
+                bytes("{0}:{1}".format(username, password), 'ascii')
+            ).decode('ascii')
+        }
+
+        # create a shoppinglist
+        create_shoppinglist_resource = self.client().post(
+            '/shoppinglist/',
+            data={'title': 'Trip to Atlanta'},
+            headers=headers
+        )
+
+        # get id of shoppinglist created
+        json_shoppinglist_resource = json.loads(
+            create_shoppinglist_resource.data.decode('utf-8').replace(
+                "'", "\"")
+        )
+        shoppinglist_id = json_shoppinglist_resource['id']
+
+        # search item that doesnt exist
+        search_items_resource = self.client().get(
+            '/shoppinglist/{}/items/?q=bread'.format(shoppinglist_id),
+            headers=headers
+        )
+
+        self.assertEqual(search_items_resource.status_code, 404)
+        self.assertIn('No item matches the keyword `bread`',
+                      str(search_items_resource.data))
+
+        # create an item
+        self.client().post(
+            '/shoppinglist/{}/items/'.format(shoppinglist_id),
+            data={'name': 'touring shorts'},
+            headers=headers
+        )
+
+        # search items
+        search_items_resource = self.client().get(
+            '/shoppinglist/{}/items/?q=shorts'.format(shoppinglist_id),
+            headers=headers
+        )
+
+        self.assertEqual(search_items_resource.status_code, 200)
+        self.assertIn('touring shorts',
+                      str(search_items_resource.data))
 
     def tearDown(self):
         with self.app.app_context():

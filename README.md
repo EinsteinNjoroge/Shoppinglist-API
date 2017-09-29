@@ -49,7 +49,7 @@ Open a browser and access **[this location](http://127.0.0.1:5000/)**.
 
 > [http://127.0.0.1:5000/login](http://127.0.0.1:5000/login)
 
-![postman login](https://raw.githubusercontent.com/EinsteinCarrey/Shoppinglist-API/migration/documentation/screenshots/postman-login.png)
+![postman login](https://raw.githubusercontent.com/EinsteinCarrey/Shoppinglist-API/migration/Designs/screenshots/postman-login.png)
 
 
 
