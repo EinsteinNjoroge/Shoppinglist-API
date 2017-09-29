@@ -175,11 +175,11 @@ class TestAPI(TestCase):
         )
         shoppinglist_id = json_shoppinglist_resource['id']
 
-        """test if API can create shoppinglists"""
+        # test if API can create shoppinglists
         self.assertEqual(create_shoppinglist_resource.status_code, 201)
         self.assertIn('back to school', str(create_shoppinglist_resource.data))
 
-        """test if API can retrieve created shoppinglists"""
+        # test if API can retrieve created shoppinglists
         get_shoppinglist_resource = self.client().get(
             '/shoppinglist/',
             headers=headers
@@ -187,7 +187,7 @@ class TestAPI(TestCase):
         self.assertEqual(get_shoppinglist_resource.status_code, 200)
         self.assertIn('back to school', str(get_shoppinglist_resource.data))
 
-        """test API can update shoppinglist"""
+        # test API can update shoppinglist
         # Update current shoppinglist
         response = self.client().put(
             '/shoppinglist/{}'.format(shoppinglist_id),
@@ -203,7 +203,7 @@ class TestAPI(TestCase):
         )
         self.assertIn('weekend party', str(shoppinglist.data))
 
-        """test API can delete shoppinglist"""
+        # test API can delete shoppinglist
         # delete shoppinglist
         response = self.client().delete(
             '/shoppinglist/{}'.format(shoppinglist_id),
@@ -327,13 +327,13 @@ class TestAPI(TestCase):
     def test_shoppinglists_pagination(self):
         # create a user and login to account created
         username = 'test_pagination'
-        password = 'test_password'
-        test_user = {'username': username, 'password': password}
+        pword = 'test_password'
+        test_user = {'username': username, 'password': pword}
         self.client().post('/user/register/', data=test_user)
 
         headers = {
             'Authorization': 'Basic ' + b64encode(
-                bytes("{0}:{1}".format(username, password), 'ascii')
+                bytes("{0}:{1}".format(username, pword), 'ascii')
             ).decode('ascii')
         }
 
@@ -386,7 +386,7 @@ class TestAPI(TestCase):
         )
         shoppinglist_id = json_shoppinglist_resource['id']
 
-        """test API can create shoppinglist item"""
+        # test API can create shoppinglist item
         create_item_resource = self.client().post(
             '/shoppinglist/{}/items/'.format(shoppinglist_id),
             data={'name': 'touring shoes'},
@@ -402,7 +402,7 @@ class TestAPI(TestCase):
         )
         item_id = json_item_resource['id']
 
-        """test API can retrieve shoppinglist items"""
+        # test API can retrieve shoppinglist items
         get_item_resource = self.client().get(
             '/shoppinglist/{}/items/'.format(shoppinglist_id),
             headers=headers
@@ -410,7 +410,7 @@ class TestAPI(TestCase):
         self.assertEqual(get_item_resource.status_code, 200)
         self.assertIn('touring shoes', str(get_item_resource.data))
 
-        """test API can update shoppinglist item"""
+        # test API can update shoppinglist item
         update_item_resource = self.client().put(
             '/shoppinglist/{}/items/{}'.format(shoppinglist_id, item_id),
             data={'name': 'Swimming floaters'},
@@ -425,7 +425,7 @@ class TestAPI(TestCase):
         )
         self.assertIn('swimming floaters', str(items.data))
 
-        """test API can delete shoppinglist item"""
+        # test API can delete shoppinglist item
         delete_item_resource = self.client().delete(
             '/shoppinglist/{}/items/{}'.format(shoppinglist_id, item_id),
             headers=headers
