@@ -57,6 +57,20 @@ class TestAPI(TestCase):
 
         self.client = self.app.test_client
 
+    def get_authorization_header(self):
+        # create a user and login to account created
+        username = 'user20nm'
+        pword = 'test_password'
+        test_user = {'username': username, 'password': pword}
+        self.client().post('/user/register/', data=test_user)
+
+        header = {
+            'Authorization': 'Basic ' + b64encode(
+                bytes("{0}:{1}".format(username, pword), 'ascii')
+            ).decode('ascii')
+        }
+        return header
+
     def test_api_user_password_complexity(self):
         user_data = {'username': 'test_user200', 'password': '123'}
         create_user_resource = self.client().post(
@@ -125,23 +139,11 @@ class TestAPI(TestCase):
         self.assertIn('token', str(authenticate_user_resource.data))
 
     def test_create_shoppinglists_with_blank_title(self):
-        # create a user and login to account created
-        username = 'user20nm'
-        password = 'test_password'
-        test_user = {'username': username, 'password': password}
-        self.client().post('/user/register/', data=test_user)
-
-        headers = {
-            'Authorization': 'Basic ' + b64encode(
-                bytes("{0}:{1}".format(username, password), 'ascii')
-            ).decode('ascii')
-        }
-
         # create a shoppinglists
         create_shoppinglist_resource = self.client().post(
             '/shoppinglist/',
             data=None,
-            headers=headers
+            headers=self.get_authorization_header()
         )
 
         self.assertEqual(create_shoppinglist_resource.status_code, 400)
@@ -149,17 +151,7 @@ class TestAPI(TestCase):
                       str(create_shoppinglist_resource.data))
 
     def test_crud_methods_of_shoppinglists(self):
-        # create a user and login to account created
-        username = 'user20'
-        password = 'test_password'
-        test_user = {'username': username, 'password': password}
-        self.client().post('/user/register/', data=test_user)
-
-        headers = {
-            'Authorization': 'Basic ' + b64encode(
-                bytes("{0}:{1}".format(username, password), 'ascii')
-            ).decode('ascii')
-        }
+        headers = self.get_authorization_header()
 
         # create a shoppinglists
         create_shoppinglist_resource = self.client().post(
@@ -188,7 +180,6 @@ class TestAPI(TestCase):
         self.assertIn('back to school', str(get_shoppinglist_resource.data))
 
         # test API can update shoppinglist
-        # Update current shoppinglist
         response = self.client().put(
             '/shoppinglist/{}'.format(shoppinglist_id),
             data={'title': "weekend party"},
@@ -219,38 +210,16 @@ class TestAPI(TestCase):
         self.assertEqual(shoppinglist.status_code, 404)
 
     def test_access_non_existent_shoppinglist(self):
-        # create a user and login to account created
-        username = 'user20cb'
-        password = 'test_password'
-        test_user = {'username': username, 'password': password}
-        self.client().post('/user/register/', data=test_user)
-
-        headers = {
-            'Authorization': 'Basic ' + b64encode(
-                bytes("{0}:{1}".format(username, password), 'ascii')
-            ).decode('ascii')
-        }
-
         get_shoppinglist_resource = self.client().get(
             '/shoppinglist/123456789',
-            headers=headers
+            headers=self.get_authorization_header()
         )
         self.assertEqual(get_shoppinglist_resource.status_code, 404)
         self.assertIn('Requested shoppinglist was not found',
                       str(get_shoppinglist_resource.data))
 
     def test_create_duplicate_shoppinglists(self):
-        # create a user and login to account created
-        username = 'user20h'
-        password = 'test_password'
-        test_user = {'username': username, 'password': password}
-        self.client().post('/user/register/', data=test_user)
-
-        headers = {
-            'Authorization': 'Basic ' + b64encode(
-                bytes("{0}:{1}".format(username, password), 'ascii')
-            ).decode('ascii')
-        }
+        headers = self.get_authorization_header()
 
         # create a shoppinglists
         self.client().post(
@@ -271,22 +240,10 @@ class TestAPI(TestCase):
                       str(create_shoppinglist_resource.data))
 
     def test_search_for_non_existent_shoppinglists(self):
-        # create a user and login to account created
-        username = 'test_search'
-        password = 'test_password'
-        test_user = {'username': username, 'password': password}
-        self.client().post('/user/register/', data=test_user)
-
-        headers = {
-            'Authorization': 'Basic ' + b64encode(
-                bytes("{0}:{1}".format(username, password), 'ascii')
-            ).decode('ascii')
-        }
-
         # search shoppinglist
         search_shoppinglist_resource = self.client().get(
             '/shoppinglist/?q=shoppinglist one',
-            headers=headers
+            headers=self.get_authorization_header()
         )
 
         self.assertIn('no shoppinglist that matches the keyword '
@@ -295,17 +252,7 @@ class TestAPI(TestCase):
         self.assertEqual(search_shoppinglist_resource.status_code, 404)
 
     def test_search_shoppinglists(self):
-        # create a user and login to account created
-        username = 'test_search2'
-        password = 'test_password'
-        test_user = {'username': username, 'password': password}
-        self.client().post('/user/register/', data=test_user)
-
-        headers = {
-            'Authorization': 'Basic ' + b64encode(
-                bytes("{0}:{1}".format(username, password), 'ascii')
-            ).decode('ascii')
-        }
+        headers = self.get_authorization_header()
 
         # create a shoppinglists
         self.client().post(
@@ -325,17 +272,7 @@ class TestAPI(TestCase):
                       str(search_shoppinglist_resource.data))
 
     def test_shoppinglists_pagination(self):
-        # create a user and login to account created
-        username = 'test_pagination'
-        pword = 'test_password'
-        test_user = {'username': username, 'password': pword}
-        self.client().post('/user/register/', data=test_user)
-
-        headers = {
-            'Authorization': 'Basic ' + b64encode(
-                bytes("{0}:{1}".format(username, pword), 'ascii')
-            ).decode('ascii')
-        }
+        headers = self.get_authorization_header()
 
         # create 1000 shoppinglists
         i = 0
@@ -360,17 +297,7 @@ class TestAPI(TestCase):
         self.assertEqual(len(json_data), 100)
 
     def test_crud_methods_of_shoppinglist_items(self):
-        # create a user
-        username = 'user200'
-        password = 'test_password'
-        test_user = {'username': username, 'password': password}
-        self.client().post('/user/register/', data=test_user)
-
-        headers = {
-            'Authorization': 'Basic ' + b64encode(
-                bytes("{0}:{1}".format(username, password), 'ascii')
-            ).decode('ascii')
-        }
+        headers = self.get_authorization_header()
 
         # create a shoppinglist
         create_shoppinglist_resource = self.client().post(
@@ -440,17 +367,7 @@ class TestAPI(TestCase):
         self.assertNotIn('swimming floaters', str(items.data))
 
     def test_shoppinglist_item_edge_cases(self):
-        # create a user and login to account created
-        username = 'user20chb'
-        password = 'test_password'
-        test_user = {'username': username, 'password': password}
-        self.client().post('/user/register/', data=test_user)
-
-        headers = {
-            'Authorization': 'Basic ' + b64encode(
-                bytes("{0}:{1}".format(username, password), 'ascii')
-            ).decode('ascii')
-        }
+        headers = self.get_authorization_header()
 
         create_shoppinglist_resource = self.client().post(
             '/shoppinglist/',
@@ -484,17 +401,7 @@ class TestAPI(TestCase):
         self.assertIn('name must be provided', str(create_item_resource.data))
 
     def test_search_items(self):
-        # create a user and login to account created
-        username = 'test_search30'
-        password = 'test_password'
-        test_user = {'username': username, 'password': password}
-        self.client().post('/user/register/', data=test_user)
-
-        headers = {
-            'Authorization': 'Basic ' + b64encode(
-                bytes("{0}:{1}".format(username, password), 'ascii')
-            ).decode('ascii')
-        }
+        headers = self.get_authorization_header()
 
         # create a shoppinglist
         create_shoppinglist_resource = self.client().post(
