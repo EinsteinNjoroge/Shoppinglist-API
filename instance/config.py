@@ -32,7 +32,8 @@ class DevelopmentConfig(Config):
 class TestingConfig(Config):
     """Configurations for testing. Uses a separate database for testing"""
     TESTING = True
-    SQLALCHEMY_DATABASE_URI = os.getenv('test_db_url')
+    SQLALCHEMY_DATABASE_URI = \
+        'postgresql://test_user:123456@localhost/test_db'
     DEBUG = True
 
 
