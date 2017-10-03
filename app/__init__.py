@@ -17,7 +17,7 @@ secret_key = os.urandom(24)  # create a random secret key for the application
 user_logged_in = None
 
 
-def launch_app(config_mode):
+def create_app(config_mode):
     flask_api = FlaskAPI(__name__, instance_relative_config=True)
     flask_api.config.from_object(configurations[config_mode])
     flask_api.config.from_pyfile('config.py')
@@ -28,6 +28,42 @@ def launch_app(config_mode):
 
     @flask_api.route('/user/register/', methods=['POST'])
     def create_user():
+        """
+            This is a
+            Call this api passing a language name and get back its features
+            ---
+            tags:
+              - Shoppinglist API
+            parameters:
+              - name: language
+                in: path
+                type: string
+                required: true
+                description: The language name
+              - name: size
+                in: query
+                type: integer
+                description: size of awesomeness
+            responses:
+              500:
+                description: Error The language is not awesome!
+              200:
+                description: A language with its awesomeness
+                schema:
+                  id: awesome
+                  properties:
+                    language:
+                      type: string
+                      description: The language name
+                      default: Lua
+                    features:
+                      type: array
+                      description: The awesomeness list
+                      items:
+                        type: string
+                      default: ["perfect", "simple", "lovely"]
+
+            """
         # Create a user account with the credentials provided
         pword = str(request.data.get('password', ''))
         username = str(request.data.get('username', '')).lower().strip()

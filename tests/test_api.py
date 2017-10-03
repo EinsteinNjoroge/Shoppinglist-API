@@ -1,7 +1,7 @@
 from base64 import b64encode
 from flask import json
 from unittest import TestCase
-from app import launch_app
+from app import create_app
 from app.models import db
 from app.models import User
 from app.models import Shoppinglists
@@ -50,7 +50,7 @@ class TestModels(TestCase):
 
 class TestAPI(TestCase):
     def setUp(self):
-        self.app = launch_app(config_mode="testing")
+        self.app = create_app(config_mode="testing")
 
         with self.app.app_context():  # bind the app to the current context
             db.create_all()  # create all tables

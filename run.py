@@ -1,6 +1,15 @@
-from app import launch_app
+import os
+from flasgger import Swagger
+from app import create_app
+from instance.config import configure_env
 
-app = launch_app(config_mode="development")
+configure_env()
+
+# Initialize flask_api
+app = create_app(os.environ.get('FLASK_CONFIG'))
+
+# Initialize swagger documentation plugin
+Swagger(app)
 
 if __name__ == '__main__':
     app.run()

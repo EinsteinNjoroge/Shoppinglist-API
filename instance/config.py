@@ -1,7 +1,15 @@
 import os
+from os.path import join, dirname
+from dotenv import load_dotenv
 
 
-DATABASE_URL = 'postgresql://postgres:user123*-+@localhost/flask_api'
+def configure_env():
+    # Configure environment variables
+    dotenv_path = join(dirname(__file__), '.env')
+    load_dotenv(dotenv_path, verbose=True)
+
+
+configure_env()
 
 
 class Config(object):
@@ -13,7 +21,7 @@ class Config(object):
 
     # generate random 24 character secret key
     SECRET = os.urandom(24)
-    SQLALCHEMY_DATABASE_URI = DATABASE_URL
+    SQLALCHEMY_DATABASE_URI = os.getenv('db_url')
 
 
 class DevelopmentConfig(Config):
@@ -24,8 +32,7 @@ class DevelopmentConfig(Config):
 class TestingConfig(Config):
     """Configurations for testing. Uses a separate database for testing"""
     TESTING = True
-    SQLALCHEMY_DATABASE_URI = \
-        'postgresql://test_user:123456@localhost/test_db'
+    SQLALCHEMY_DATABASE_URI = os.getenv('test_db_url')
     DEBUG = True
 
 
