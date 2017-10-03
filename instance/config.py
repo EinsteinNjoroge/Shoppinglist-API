@@ -5,7 +5,8 @@ from dotenv import load_dotenv
 
 def configure_env():
     # Configure environment variables
-    dotenv_path = join(dirname(__file__), '.env')
+    dotenv_path = join(os.path.abspath(os.path.join(os.path.dirname(
+        __file__), "..")), '.env')
     load_dotenv(dotenv_path, verbose=True)
 
 
