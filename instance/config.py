@@ -1,16 +1,12 @@
 import os
-from os.path import join, dirname
+from os.path import join, abspath, dirname
 from dotenv import load_dotenv
 
 
 def configure_env():
     # Configure environment variables
-    dotenv_path = join(os.path.abspath(os.path.join(os.path.dirname(
-        __file__), "..")), '.env')
+    dotenv_path = join(abspath(join(dirname(__file__), "..")), '.env')
     load_dotenv(dotenv_path, verbose=True)
-
-
-configure_env()
 
 
 class Config(object):
@@ -47,6 +43,7 @@ class ProductionConfig(Config):
     """Configurations for Production."""
     DEBUG = False
     TESTING = False
+    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL')
 
 
 configurations = {

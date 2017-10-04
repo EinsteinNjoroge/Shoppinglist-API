@@ -246,8 +246,8 @@ class TestAPI(TestCase):
             headers=self.get_authorization_header()
         )
 
-        self.assertIn('no shoppinglist that matches the keyword '
-                      '`shoppinglist one`',
+        self.assertIn('No shoppinglist matches the keyword `shoppinglist '
+                      'one`',
                       str(search_shoppinglist_resource.data))
         self.assertEqual(search_shoppinglist_resource.status_code, 404)
 

@@ -29,21 +29,11 @@ def create_app(config_mode):
     @flask_api.route('/user/register/', methods=['POST'])
     def create_user():
         """
-            This is a
+            Creating
             Call this api passing a language name and get back its features
             ---
             tags:
-              - Shoppinglist API
-            parameters:
-              - name: language
-                in: path
-                type: string
-                required: true
-                description: The language name
-              - name: size
-                in: query
-                type: integer
-                description: size of awesomeness
+              - User Registration and Authentication
             responses:
               500:
                 description: Error The language is not awesome!
@@ -102,6 +92,42 @@ def create_app(config_mode):
 
     @flask_api.route('/user/login/', methods=['POST'])
     def authenticate_user():
+        """
+            This is the language awesomeness API
+            Call this api passing a language name and get back its features
+            ---
+            tags:
+              - User Registration and Authentication
+            parameters:
+              - name: language
+                in: path
+                type: string
+                required: true
+                description: The language name
+              - name: size
+                in: query
+                type: integer
+                description: size of awesomeness
+            responses:
+              500:
+                description: Error The language is not awesome!
+              200:
+                description: A language with its awesomeness
+                schema:
+                  id: awesome
+                  properties:
+                    language:
+                      type: string
+                      description: The language name
+                      default: Lua
+                    features:
+                      type: array
+                      description: The awesomeness list
+                      items:
+                        type: string
+                      default: ["perfect", "simple", "lovely"]
+
+            """
         pword = str(request.data.get('password', ''))
         username = str(request.data.get('username', ''))
 
@@ -145,6 +171,42 @@ def create_app(config_mode):
     @flask_api.route('/shoppinglist/', methods=['POST', 'GET'])
     @auth.login_required
     def shoppinglists():
+        """
+            This is the language awesomeness API
+            Call this api passing a language name and get back its features
+            ---
+            tags:
+              - Creating and Listing shoppinglists
+            parameters:
+              - name: language
+                in: path
+                type: string
+                required: true
+                description: The language name
+              - name: size
+                in: query
+                type: integer
+                description: size of awesomeness
+            responses:
+              500:
+                description: Error The language is not awesome!
+              200:
+                description: A language with its awesomeness
+                schema:
+                  id: awesome
+                  properties:
+                    language:
+                      type: string
+                      description: The language name
+                      default: Lua
+                    features:
+                      type: array
+                      description: The awesomeness list
+                      items:
+                        type: string
+                      default: ["perfect", "simple", "lovely"]
+
+            """
 
         user_id = user_logged_in.id
         shopping_lists = None
@@ -194,8 +256,8 @@ def create_app(config_mode):
 
                     if len(shopping_lists) < 1:
                         response = jsonify({
-                            'error_msg': "There is no shoppinglist that matches"
-                                         " the keyword `{}`.".format(keyword)
+                            'error_msg': "No shoppinglist matches the "
+                                         "keyword `{}`.".format(keyword)
                         })
                         response.status_code = 404
                         return response
@@ -226,6 +288,42 @@ def create_app(config_mode):
                      methods=['PUT', 'GET', 'DELETE'])
     @auth.login_required
     def shoppinglist(list_id):
+        """
+            This is the language awesomeness API
+            Call this api passing a language name and get back its features
+            ---
+            tags:
+              - Manipulating shoppinglists
+            parameters:
+              - name: language
+                in: path
+                type: string
+                required: true
+                description: The language name
+              - name: size
+                in: query
+                type: integer
+                description: size of awesomeness
+            responses:
+              500:
+                description: Error The language is not awesome!
+              200:
+                description: A language with its awesomeness
+                schema:
+                  id: awesome
+                  properties:
+                    language:
+                      type: string
+                      description: The language name
+                      default: Lua
+                    features:
+                      type: array
+                      description: The awesomeness list
+                      items:
+                        type: string
+                      default: ["perfect", "simple", "lovely"]
+
+            """
         user_id = user_logged_in.id
 
         # check if shoppinglist with id <list_id> exists
@@ -279,6 +377,42 @@ def create_app(config_mode):
                      methods=['POST', 'GET'])
     @auth.login_required
     def shoppinglist_items(list_id):
+        """
+            This is the language awesomeness API
+            Call this api passing a language name and get back its features
+            ---
+            tags:
+              - Creating and Retrieving shoppinglists
+            parameters:
+              - name: language
+                in: path
+                type: string
+                required: true
+                description: The language name
+              - name: size
+                in: query
+                type: integer
+                description: size of awesomeness
+            responses:
+              500:
+                description: Error The language is not awesome!
+              200:
+                description: A language with its awesomeness
+                schema:
+                  id: awesome
+                  properties:
+                    language:
+                      type: string
+                      description: The language name
+                      default: Lua
+                    features:
+                      type: array
+                      description: The awesomeness list
+                      items:
+                        type: string
+                      default: ["perfect", "simple", "lovely"]
+
+            """
 
         user_id = user_logged_in.id
         shopping_list = Shoppinglists.query.filter_by(id=list_id,
@@ -378,6 +512,42 @@ def create_app(config_mode):
                      methods=['PUT', 'GET', 'DELETE'])
     @auth.login_required
     def shoppinglist_item(list_id, item_id):
+        """
+            This is the language awesomeness API
+            Call this api passing a language name and get back its features
+            ---
+            tags:
+              - Awesomeness Language API
+            parameters:
+              - name: language
+                in: path
+                type: string
+                required: true
+                description: The language name
+              - name: size
+                in: query
+                type: integer
+                description: size of awesomeness
+            responses:
+              500:
+                description: Error The language is not awesome!
+              200:
+                description: A language with its awesomeness
+                schema:
+                  id: awesome
+                  properties:
+                    language:
+                      type: string
+                      description: The language name
+                      default: Lua
+                    features:
+                      type: array
+                      description: The awesomeness list
+                      items:
+                        type: string
+                      default: ["perfect", "simple", "lovely"]
+
+            """
 
         user_id = user_logged_in.id
         shopping_list = Shoppinglists.query.filter_by(id=list_id,
