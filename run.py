@@ -1,9 +1,7 @@
 import os
 from flasgger import Swagger
 from app import create_app
-from instance.config import configure_env
 
-configure_env()
 
 # Initialize flask_api
 app = create_app(os.environ.get('FLASK_CONFIG'))

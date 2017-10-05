@@ -1,12 +1,4 @@
 import os
-from os.path import join, abspath, dirname
-from dotenv import load_dotenv
-
-
-def configure_env():
-    # Configure environment variables
-    dotenv_path = join(abspath(join(dirname(__file__), "..")), '.env')
-    load_dotenv(dotenv_path, verbose=True)
 
 
 class Config(object):
@@ -30,7 +22,7 @@ class TestingConfig(Config):
     """Configurations for testing. Uses a separate database for testing"""
     TESTING = True
     SQLALCHEMY_DATABASE_URI = \
-        'postgresql://test_user:123456@localhost/test_db'
+        'postgresql://postgres:1@localhost/test_db'
     DEBUG = True
 
 

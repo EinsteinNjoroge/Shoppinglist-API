@@ -30,7 +30,7 @@ These instructions will get you a copy of the project up and running on your loc
 
 1. ##### Create a virtual environment
 
-   ​	Use this [**guide**](http://python-guide-pt-br.readthedocs.io/en/latest/dev/virtualenvs/).
+   ​	Use this [**guide**](http://sourabhbajaj.com/mac-setup/Python/virtualenv.html).
 
    ​	Activate the  virtual environment.
 
@@ -43,14 +43,24 @@ These instructions will get you a copy of the project up and running on your loc
 
 > `python run.py`
 
+
 ##### Access the server using [postman](https://www.getpostman.com/)
 
 Open a browser and access **[this location](http://127.0.0.1:5000/)**.
+
+You can access the hosted version  **[here](https://einstein-shoppinglist-api.herokuapp.com/apidocs/)**.
+https://einstein-shoppinglist-api.herokuapp.com/
+
+
 
 > [http://127.0.0.1:5000/login](http://127.0.0.1:5000/login)
 
 ![postman login](https://raw.githubusercontent.com/EinsteinCarrey/Shoppinglist-API/migration/Designs/screenshots/postman-login.png)
 
+
+
+##### More documentation can be found [here](https://einstein-shoppinglist-api.herokuapp.com/apidocs/)
+https://einstein-shoppinglist-api.herokuapp.com/apidocs/
 
 
 ### Usage
