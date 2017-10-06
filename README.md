@@ -52,13 +52,6 @@ You can access the hosted version  **[here](https://einstein-shoppinglist-api.he
 https://einstein-shoppinglist-api.herokuapp.com/
 
 
-
-> [http://127.0.0.1:5000/login](http://127.0.0.1:5000/login)
-
-![postman login](https://raw.githubusercontent.com/EinsteinCarrey/Shoppinglist-API/migration/Designs/screenshots/postman-login.png)
-
-
-
 ##### More documentation can be found [here](https://einstein-shoppinglist-api.herokuapp.com/apidocs/)
 https://einstein-shoppinglist-api.herokuapp.com/apidocs/
 

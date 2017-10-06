@@ -1,0 +1,394 @@
+---
+basePath: "/"
+
+info:
+  description: A shopping-list app to help you keep track of your shopping carts.
+  title: ShoppingList API
+  version: 1.0.0
+
+paths:
+
+  "/user/register/":
+    post:
+      tags:
+        - Authentication
+      summary: user account registration
+      parameters:
+        - name: password
+          in: body
+          type: string
+          required: true
+          default: "password_123"
+        - name: username
+          in: body
+          type: string
+          required: true
+          default: "username"
+      responses:
+        201:
+          description: User acount has been created successfully
+          schema:
+            properties:
+              message:
+                type: string
+                description: success message
+                default: User `username` has been created
+              id:
+                type: integer
+                description: User's ID
+                default: 20
+        409:
+          description: Password provided is shorter than 6 characters (OR) Username `username` is already registered.
+        400:
+          description: Username or Password provided is not valid
+
+  "/user/login/":
+    post:
+      tags:
+        - Authentication
+      summary: User authentication
+      parameters:
+      - name: password
+        in: body
+        type: string
+        required: true
+        default: "password_123"
+      - name: username
+        in: body
+        type: string
+        required: true
+        default: "username"
+      responses:
+        200:
+          description: User has been authenticated successfully
+          schema:
+            properties:
+              token:
+                type: byte
+                description: Authentication token awarded to user
+                default: "W3dEdRe4T6v66f7fggg76g24phfQ6FgtDRTYghFDRETR"
+        401:
+          description: Wrong credentials combination
+          schema:
+            properties:
+              error_msg:
+                type: string
+                description: Error message returned
+                default: "Wrong credentials combination"
+        400:
+          description: Username or Password not provided
+          schema:
+            properties:
+              error_msg:
+                type: string
+                description: Error message returned
+                default: "Please provide a valid username and password"
+
+  "/shoppinglists/":
+    post:
+      tags:
+        - Creating and manipulating lists
+      summary: Create a new shoppinglist
+      parameters:
+        - name: title
+          in: body
+          type: string
+          required: true
+          default: "Weekend party"
+          schema:
+            properties:
+              title:
+                type: string
+                description: The shopping-list's title
+                default: "Weekend party"
+      responses:
+        201:
+          description: Shoppinglist has been created successfully
+          schema:
+            properties:
+              title:
+                type: string
+                description: Title of shoppinglist created
+                default: "Weekend party"
+              id:
+                type: integer
+                description: ID of shoppinglist
+                default: 20
+        400:
+          description: Title was not provided
+          schema:
+          properties:
+            error_msg:
+              type: string
+              description: Error message returned
+              default: "shoppinglist title must be provided"
+        409:
+          description: A shoppinglist with a similar title already exists
+          schema:
+          properties:
+            error_msg:
+              type: string
+              description: Error message returned
+              default: "`weekend party` already exists"
+
+    get:
+      tags:
+        - Creating and manipulating lists
+      summary: Retrieve all shoppinglists owned by current user
+      parameters:
+        - name: limit
+          in: path
+          type: string
+          schema:
+            properties:
+              limit:
+                type: integer
+                description: The shopping-list's title
+                default: "Weekendparty"
+      responses:
+        201:
+          description: Shoppinglist has been created successfully
+          schema:
+            properties:
+              title:
+                type: string
+                description: Title of shoppinglist created
+                default: "Weekend party"
+              id:
+                type: integer
+                description: ID of shoppinglist
+                default: 20
+
+  "/list/{list_id}/":
+      get:
+        operationId: user_get_one
+        parameters:
+          - name: x-access-token
+            in: header
+            type: string
+            required: true
+          - name: list_id
+            in: path
+            type: int
+            required: true
+        responses:
+          200:
+            description: Success
+          204:
+            description: List content was not found.
+          406:
+            description: invalid or missing data.
+        tags:
+          - List Functionalities
+      put:
+        operationId: update_name_one
+        parameters:
+          - name: x-access-token
+            in: header
+            type: string
+            required: true
+          - name: list_id
+            in: path
+            type: int
+            required: true
+          - name: New_List_Name
+            in : body
+            type: string
+            schema:
+              id: List_Name
+              required:
+                - list_name
+              properties:
+                list_name:
+                  type: string
+                  description: The new list name.
+                  default: "Back to School 2017"
+        responses:
+          200:
+            description: Success
+          204:
+            description: List content was not found.
+          406:
+            description: invalid name.
+        tags:
+          - List Functionalities
+      delete:
+        operationId: delete_list_one
+        parameters:
+          - name: x-access-token
+            in: header
+            type: string
+            required: true
+          - name: list_id
+            in: path
+            type: int
+            required: true
+        responses:
+          200:
+            description: Success
+          204:
+            description: List content was not found.
+        tags:
+          - List Functionalities
+
+  "/list/{list_id}/items":
+      get:
+        operationId: get_all_items
+        parameters:
+          - name: x-access-token
+            in: header
+            type: string
+            required: true
+          - name: list_id
+            in: path
+            type: int
+            required: true
+          - name: page
+            in: path
+            type: int
+          - name: limit
+            in: path
+            type: int
+        responses:
+          200:
+            description: Success
+          204:
+            description: List content was not found.
+          406:
+            description: invalid or missing data.
+        tags:
+          - Item Functionalities
+  "/list/{list_id}/":
+      post:
+        operationId: create_item
+        parameters:
+          - name: x-access-token
+            in: header
+            type: string
+            required: true
+          - name: list_id
+            in: path
+            type: int
+            required: true
+          - name: item_details
+            in: body
+            type: string
+            required: true
+            schema:
+              id: Item Details
+              required:
+                - item_name
+              properties:
+                item_name:
+                  type: string
+                  description: The new item name.
+                  default: "Note Book"
+                quantity:
+                  type: int
+                  description: Number of items
+                  default: 6
+        responses:
+          200:
+            description: Success
+          204:
+            description: List content was not found.
+          406:
+            description: invalid or missing data.
+        tags:
+          - Item Functionalities
+
+  "/list/{list_id}/{item_id}":
+      get:
+        operationId: get_item
+        parameters:
+          - name: x-access-token
+            in: header
+            type: string
+            required: true
+          - name: list_id
+            in: path
+            type: int
+            required: true
+          - name: item_id
+            in: path
+            type: int
+            required: true
+        responses:
+          200:
+            description: Success
+          204:
+            description: List content was not found.
+          406:
+            description: invalid or missing data.
+        tags:
+          - Item Functionalities
+      put:
+        operationId: edit_item_name_quantity
+        parameters:
+          - name: x-access-token
+            in: header
+            type: string
+            required: true
+          - name: list_id
+            in: path
+            type: int
+            required: true
+          - name: item_id
+            in: path
+            type: int
+            required: true
+          - name:
+            in: body
+            type: string
+            required: true
+            schema:
+              id: item_update_details
+              properties:
+                item_name:
+                  type: string
+                  description: new_item_name
+                  default: Hard Cover Note Book
+                quantity:
+                  type: int
+                  description: new number of items
+                  default: 10
+        responses:
+          200:
+            description: Success
+          204:
+            description: List content was not found.
+          406:
+            description: invalid or missing data.
+        tags:
+          - Item Functionalities
+      delete:
+        operationId: delete_item
+        parameters:
+          - name: x-access-token
+            in: header
+            type: string
+            required: true
+          - name: list_id
+            in: path
+            type: int
+            required: true
+          - name: item_id
+            in: path
+            type: int
+            required: true
+        responses:
+          200:
+            description: Success
+          204:
+            description: List content was not found.
+          406:
+            description: invalid or missing data.
+        tags:
+          - Item Functionalities
+
+
+securityDefinitions:
+  basicAuth:
+    type : basic
+
+swagger: '2.0'
