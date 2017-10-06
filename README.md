@@ -1,10 +1,10 @@
 # Shoppinglist-API
 
-[![Coverage Status](https://coveralls.io/repos/github/EinsteinCarrey/Shoppinglist-API/badge.svg?branch=master)](https://coveralls.io/github/EinsteinCarrey/Shoppinglist-API?branch=master)
+[![Coverage Status](https://coveralls.io/repos/github/EinsteinCarrey/Shoppinglist-API/badge.svg?branch=develop)](https://coveralls.io/github/EinsteinCarrey/Shoppinglist-API?branch=develop)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/35e84b6a5c0a43a49116ebffdeb80d01)](https://www.codacy.com/app/EinsteinCarrey/Shoppinglist-API?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=EinsteinCarrey/Shoppinglist-API&amp;utm_campaign=Badge_Grade)
-[![Build Status](https://travis-ci.org/EinsteinCarrey/Shoppinglist-API.svg?branch=master)](https://travis-ci.org/EinsteinCarrey/Shoppinglist-API)
-[![Code Health](https://landscape.io/github/EinsteinCarrey/Shoppinglist-API/master/landscape.svg?style=flat)](https://landscape.io/github/EinsteinCarrey/Shoppinglist-API/master)
+[![Build Status](https://travis-ci.org/EinsteinCarrey/Shoppinglist-API.svg?branch=develop)](https://travis-ci.org/EinsteinCarrey/Shoppinglist-API)
+[![Code Health](https://landscape.io/github/EinsteinCarrey/Shoppinglist-API/develop/landscape.svg?style=flat)](https://landscape.io/github/EinsteinCarrey/Shoppinglist-API/develop)
 
 
 
@@ -30,7 +30,7 @@ These instructions will get you a copy of the project up and running on your loc
 
 1. ##### Create a virtual environment
 
-   ​	Use this [**guide**](http://python-guide-pt-br.readthedocs.io/en/latest/dev/virtualenvs/).
+   ​	Use this [**guide**](http://sourabhbajaj.com/mac-setup/Python/virtualenv.html).
 
    ​	Activate the  virtual environment.
 
@@ -43,14 +43,24 @@ These instructions will get you a copy of the project up and running on your loc
 
 > `python run.py`
 
+
 ##### Access the server using [postman](https://www.getpostman.com/)
 
 Open a browser and access **[this location](http://127.0.0.1:5000/)**.
 
+You can access the hosted version  **[here](https://einstein-shoppinglist-api.herokuapp.com/apidocs/)**.
+https://einstein-shoppinglist-api.herokuapp.com/
+
+
+
 > [http://127.0.0.1:5000/login](http://127.0.0.1:5000/login)
 
-![postman login](https://raw.githubusercontent.com/EinsteinCarrey/Shoppinglist-API/migration/documentation/screenshots/postman-login.png)
+![postman login](https://raw.githubusercontent.com/EinsteinCarrey/Shoppinglist-API/migration/Designs/screenshots/postman-login.png)
 
+
+
+##### More documentation can be found [here](https://einstein-shoppinglist-api.herokuapp.com/apidocs/)
+https://einstein-shoppinglist-api.herokuapp.com/apidocs/
 
 
 ### Usage
@@ -59,15 +69,14 @@ Open a browser and access **[this location](http://127.0.0.1:5000/)**.
 | ---------------------------------------- | ---------------------------------------- |
 | POST /auth/login                         | Logs a user in and generates a unique token |
 | POST /auth/register                      | Register a user                          |
-| POST /shoppinglists/                     | Create a new shopping list               |
-| GET /shoppinglists/                      | List all the created shopping lists that belongs to the logged in user |
-| GET /shoppinglists/<shopping-list id>    | Get a specific shopping list             |
-| PUT /shoppinglists/<shopping-list id>    | Updates the specified shopping list      |
-| DELETE /shoppinglists/<shopping-list id>/item/<item id> | Delete a specified item in a shopping list |
-| POST /shoppinglists/<shopping-list id>/items/ | Create a new item in shopping list       |
-| PUT  /shoppinglists/<shopping-list id>/items/<item id> | Delete an item in a shopping list        |
-| GET /shoppinglists/<shopping-list id>/items/ | list all items in a shopping list        |
-| DELETE /shoppinglist/<shopping-list id>  | Delete the specified shopping list       |
+| POST /shoppinglist/                      | Create a new shopping list               |
+| GET /shoppinglist/                       | List all the created shopping lists that belongs to the logged in user |
+| PUT /shoppinglist/`<shopping-list id>`   | Updates the specified shopping list      |
+| DELETE /shoppinglist/`<shopping-list id>`/item/`<item id>` | Delete a specified item in a shopping list |
+| POST /shoppinglist/`<shopping-list id>`/items/ | Create a new item in shopping list       |
+| PUT  /shoppinglist/`<shopping-list id>`/items/`<item id>` | Delete an item in a shopping list        |
+| GET /shoppinglist/`<shopping-list id>`/items/ | list all items in a shopping list        |
+| DELETE /shoppinglist/`<shopping-list id>` | Delete the specified shopping list       |
 
 
 
