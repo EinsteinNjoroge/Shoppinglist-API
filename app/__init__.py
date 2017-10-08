@@ -76,7 +76,7 @@ def create_app(config_mode):
             return make_response(data, status_code=400)
 
         if verify_password(username, pword):
-            token = generate_auth_token(user_logged_in)
+            token = generate_auth_token()
             data = {
                 "token": token.decode('ascii')
             }
@@ -361,12 +361,33 @@ def create_app(config_mode):
 
 
 def make_response(data, status_code):
+    """Convert dictionary provided to a json array and adds a status code to
+    the dictionary
+
+        :arg:
+            data (dict): Dictionary to be converted to json array
+            status_code (int):
+
+        :return
+            response (json):
+    """
     response = jsonify(data)
     response.status_code = status_code
     return response
 
 
 def validate_title(title):
+    """Validates that a title has the at-least one character and that no
+        other shoppinglist - belonging to the current user - has a similar
+        title
+
+        :arg:
+            title (string): The title of shoppinglist to be created
+
+        :return
+            response (json): Error message generated if any, otherwise
+            returns None
+    """
     user_id = user_logged_in.id
 
     if not title:
@@ -377,7 +398,7 @@ def validate_title(title):
 
     # check if similar shoppinglist owned by same user exists
     if Shoppinglists.query.filter_by(title=title,
-                                       user_id=user_id).first():
+                                     user_id=user_id).first():
         data = {
             'error_msg': "`{}` already exists".format(title)
         }
@@ -385,6 +406,17 @@ def validate_title(title):
 
 
 def validate_item_name(name, list_id):
+    """Validates that a name has the at-least one character and that no
+    other item - belonging to the current user - has a similar name
+
+        :arg:
+            name (string): The name of item to be created
+            list_id (int): ID of the shoppinglist where item will be created
+
+        :return
+            response (json): Error message generated if any, otherwise
+            returns None
+    """
 
     if not name:
         data = {
@@ -423,12 +455,29 @@ def sha1_hash(value):
     return hashed_value
 
 
-def generate_auth_token(user):
+def generate_auth_token():
+    """Creates a user authentication token using the user's ID
+
+        :arg:
+            user (object): User to be authenticated
+
+        :return
+            (byte): Authentication token
+    """
     s = Serializer(secret_key, expires_in=600)
-    return s.dumps({'id': user.id})
+    return s.dumps({'id': user_logged_in.id})
 
 
 def verify_auth_token(token):
+    """Checks an authentication token to validate that it has a valid user's ID
+    and is not expired
+
+        :arg:
+            token (string): Authentication token provided
+
+        :return
+            (boolean): True if token is valid otherwise returns False
+    """
     s = Serializer(secret_key)
 
     try:
