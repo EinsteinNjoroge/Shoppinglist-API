@@ -26,6 +26,15 @@ def create_app(config_mode):
     db.init_app(flask_api)
     auth = HTTPBasicAuth()
 
+    @flask_api.route('/', methods=['GET'])
+    def index():
+
+        data = {
+            "message": "WELCOME TO THE SHOPPINGLIST API. KEEP TRACK OF YOUR "
+                       "SHOPPING CARTS AND ITEMS."
+        }
+        return make_response(data, status_code=200)
+
     @flask_api.route('/user/register/', methods=['POST'])
     def create_user():
 
@@ -89,6 +98,7 @@ def create_app(config_mode):
 
     @auth.verify_password
     def verify_password(username, pword):
+
         # Attempt to authenticate using token
         user = verify_auth_token(username)
 
@@ -98,9 +108,11 @@ def create_app(config_mode):
             user = User.query.filter_by(username=username,
                                         password_hash=password_hash).first()
         if user:
+            # Credentials are authentic
             global user_logged_in
             user_logged_in = user
             return True
+
         return False
 
     @flask_api.route('/shoppinglist/', methods=['POST', 'GET'])
@@ -108,18 +120,18 @@ def create_app(config_mode):
     def shoppinglists():
 
         user_id = user_logged_in.id
-        shopping_lists = None
-        limit = None
 
         if request.method == 'POST':
 
             # Create a shoppinglist with title provided
             title = str(request.data.get('title', '')).lower().strip()
 
+            # check if title is valid
             error_message = validate_title(title)
             if error_message:
                 return error_message
 
+            # create shoppinglist
             shopping_list = Shoppinglists(title=title, user_id=user_id)
             shopping_list.save()
             data = {
@@ -130,7 +142,10 @@ def create_app(config_mode):
 
         # METHOD GET
 
-        # check if GET parameters has been provided with the path
+        shopping_lists = None
+        limit = None
+
+        # check if GET parameters has been parsed with the path
         args = request.args
         if args:
 
@@ -143,12 +158,14 @@ def create_app(config_mode):
                 keyword = str(args['q']).lower()
 
                 if limit:
+                    # search with pagination
                     shopping_lists = Shoppinglists.query.filter(
                         Shoppinglists.title.like("%{}%".format(keyword)),
                         Shoppinglists.user_id == user_id
                     ).limit(limit).all()
 
                 else:
+                    # search without pagination
                     shopping_lists = Shoppinglists.query.filter(
                         Shoppinglists.title.like("%{}%".format(keyword)),
                         Shoppinglists.user_id == user_id
