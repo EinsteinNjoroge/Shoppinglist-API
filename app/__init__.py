@@ -34,36 +34,35 @@ def create_app(config_mode):
         username = str(request.data.get('username', '')).lower().strip()
 
         if not username or not pword:
-            response = jsonify({
+            data = {
                 "error_msg": "Please provide a valid username and password"
-            })
-            response.status_code = 400
+            }
+            return make_response(data, status_code=400)
 
-        elif len(pword) < 7:
-            response = jsonify({
+        if len(pword) < 7:
+            data = {
                 "error_msg": "password must be at-least 6 characters long"
-            })
-            response.status_code = 409
+            }
+            return make_response(data, status_code=409)
 
         # Check username is already registered
-        elif User.query.filter_by(username=username).first():
-            response = jsonify({
+        if User.query.filter_by(username=username).first():
+            data = {
                 "error_msg": "username `{}` is already registered. Please "
                              "provide a unique username".format(username)
-            })
-            response.status_code = 409
+            }
+            return make_response(data, status_code=409)
 
-        else:
-            password_hash = sha1_hash(pword)
-            new_user = User(username=username, password_hash=password_hash)
-            new_user.save()
-            response = jsonify({
-                "message": "user `{}` has been created".format(username),
-                "id": new_user.id
-            })
-            response.status_code = 201
+        # Create a user
+        password_hash = sha1_hash(pword)
+        new_user = User(username=username, password_hash=password_hash)
+        new_user.save()
 
-        return response
+        data = {
+            "message": "user `{}` has been created".format(username),
+            "id": new_user.id
+        }
+        return make_response(data, status_code=201)
 
     @flask_api.route('/user/login/', methods=['POST'])
     def authenticate_user():
@@ -71,25 +70,22 @@ def create_app(config_mode):
         username = str(request.data.get('username', ''))
 
         if not username or not pword:
-            response = jsonify({
+            data = {
                 "error_msg": "Please provide a valid username and password"
-            })
-            response.status_code = 400
+            }
+            return make_response(data, status_code=400)
 
-        elif verify_password(username, pword):
+        if verify_password(username, pword):
             token = generate_auth_token(user_logged_in)
-            response = jsonify({
+            data = {
                 "token": token.decode('ascii')
-            })
-            response.status_code = 200
+            }
+            return make_response(data, status_code=200)
 
-        else:
-            response = jsonify({
-                "message": "Wrong credentials combination"
-            })
-            response.status_code = 401
-
-        return response
+        data = {
+            "message": "Wrong credentials combination"
+        }
+        return make_response(data, 401)
 
     @auth.verify_password
     def verify_password(username, pword):
@@ -124,68 +120,65 @@ def create_app(config_mode):
             if error_message:
                 return error_message
 
-            else:
-                shopping_list = Shoppinglists(title=title, user_id=user_id)
-                shopping_list.save()
-                response = jsonify(
-                    {
-                        'id': shopping_list.id,
-                        'title': shopping_list.title
-                    }
-                )
-                response.status_code = 201
-        else:
-            # check if a search keyword has been provided
-            args = request.args
-            if args:
-                if 'limit' in args:
-                    # limit number of results returned
-                    limit = int(args['limit'])
+            shopping_list = Shoppinglists(title=title, user_id=user_id)
+            shopping_list.save()
+            data = {
+                'id': shopping_list.id,
+                'title': shopping_list.title
+            }
+            return make_response(data, status_code=201)
 
-                if 'q' in args:
-                    # search for shoppinglists that contain keyword provided
-                    keyword = str(args['q']).lower()
+        # METHOD GET
 
-                    if limit:
-                        shopping_lists = Shoppinglists.query.filter(
-                            Shoppinglists.title.like("%{}%".format(keyword)),
-                            Shoppinglists.user_id == user_id
-                        ).limit(limit).all()
-                    else:
-                        shopping_lists = Shoppinglists.query.filter(
-                            Shoppinglists.title.like("%{}%".format(keyword)),
-                            Shoppinglists.user_id == user_id
-                        ).all()
+        # check if GET parameters has been provided with the path
+        args = request.args
+        if args:
 
-                    if len(shopping_lists) < 1:
-                        response = jsonify({
-                            'error_msg': "There is no shoppinglist that matches"
-                                         " the keyword `{}`.".format(keyword)
-                        })
-                        response.status_code = 404
-                        return response
+            if 'limit' in args:
+                # limit number of results returned
+                limit = int(args['limit'])
 
-            if not shopping_lists:
+            if 'q' in args:
+                # search for shoppinglists that contain keyword provided
+                keyword = str(args['q']).lower()
+
                 if limit:
-                    # Limit number of shoppinglists returned
-                    shopping_lists = Shoppinglists.query.filter_by(
-                        user_id=user_id).limit(limit)
+                    shopping_lists = Shoppinglists.query.filter(
+                        Shoppinglists.title.like("%{}%".format(keyword)),
+                        Shoppinglists.user_id == user_id
+                    ).limit(limit).all()
+
                 else:
-                    # Retrieve all shoppinglists
-                    shopping_lists = Shoppinglists.query.filter_by(
-                        user_id=user_id).all()
+                    shopping_lists = Shoppinglists.query.filter(
+                        Shoppinglists.title.like("%{}%".format(keyword)),
+                        Shoppinglists.user_id == user_id
+                    ).all()
 
-            results = []
-            for shopping_list in shopping_lists:
-                list_details = {
-                    'id': shopping_list.id,
-                    'title': shopping_list.title
-                }
-                results.append(list_details)
-            response = jsonify(results)
-            response.status_code = 200
+                if len(shopping_lists) < 1:
+                    data = {
+                        'error_msg': "No shoppinglist matches "
+                                     "the keyword `{}`.".format(keyword)
+                    }
+                    return make_response(data, 404)
 
-        return response
+        if not shopping_lists:
+            if limit:
+                # Limit number of shoppinglists returned
+                shopping_lists = Shoppinglists.query.filter_by(
+                    user_id=user_id).limit(limit)
+            else:
+                # Retrieve all shoppinglists
+                shopping_lists = Shoppinglists.query.filter_by(
+                    user_id=user_id).all()
+
+        data = []
+        for shopping_list in shopping_lists:
+            list_details = {
+                'id': shopping_list.id,
+                'title': shopping_list.title
+            }
+            data.append(list_details)
+        return make_response(data, status_code=200)
 
     @flask_api.route('/shoppinglist/<int:list_id>',
                      methods=['PUT', 'GET', 'DELETE'])
@@ -197,11 +190,10 @@ def create_app(config_mode):
         shopping_list = Shoppinglists.query.filter_by(id=list_id,
                                                       user_id=user_id).first()
         if not shopping_list:
-            response = jsonify({
+            data = {
                 'error_msg': "Requested shoppinglist was not found"
-            })
-            response.status_code = 404
-            return response
+            }
+            return make_response(data, status_code=404)
 
         if request.method == 'PUT':
             title = str(request.data.get('title', '')).lower().strip()
@@ -212,33 +204,26 @@ def create_app(config_mode):
 
             shopping_list.title = title
             shopping_list.save()
-
-            response = jsonify({
-                'id': shopping_list.id,
-                'title': shopping_list.title
-            })
-            response.status_code = 200
-
-        elif request.method == 'DELETE':
-
-            shopping_list.delete()
-            response = jsonify({
-                "message": "shoppinglist {} has been deleted "
-                           "successfully".format(list_id)
-            })
-            response.status_code = 200
-
-        else:
-            # retrieve the list with the id provided
-            list_details = {
+            data = {
                 'id': shopping_list.id,
                 'title': shopping_list.title
             }
+            return make_response(data, 200)
 
-            response = jsonify(list_details)
-            response.status_code = 200
+        if request.method == 'DELETE':
+            shopping_list.delete()
+            data = {
+                "message": "shoppinglist {} has been deleted "
+                           "successfully".format(list_id)
+            }
+            return make_response(data, status_code=200)
 
-        return response
+        # retrieve the list with the id provided
+        list_details = {
+            'id': shopping_list.id,
+            'title': shopping_list.title
+        }
+        return make_response(list_details, status_code=200)
 
     @flask_api.route('/shoppinglist/<int:list_id>/items/',
                      methods=['POST', 'GET'])
@@ -249,11 +234,8 @@ def create_app(config_mode):
         shopping_list = Shoppinglists.query.filter_by(id=list_id,
                                                       user_id=user_id).first()
         if not shopping_list:
-            response = jsonify({
-                'error_msg': "Requested shoppinglist was not found"
-            })
-            response.status_code = 404
-            return response
+            data = {'error_msg': "Requested shoppinglist was not found"}
+            return make_response(data, status_code=404)
 
         if request.method == 'POST':
             # Create shoppinglist item with the name provided
@@ -267,13 +249,11 @@ def create_app(config_mode):
             else:
                 item = ShoppingListItems(name=name, shoppinglist_id=list_id)
                 item.save()
-                response = jsonify(
-                    {
-                        'id': item.id,
-                        'name': item.name
-                    }
-                )
-                response.status_code = 201
+                data = {
+                    'id': item.id,
+                    'name': item.name
+                }
+                return make_response(data, status_code=201)
 
         else:
             items = None
@@ -309,12 +289,10 @@ def create_app(config_mode):
 
                     # if no items contains keyword
                     if len(items) < 1:
-                        response = jsonify({
-                            'error_msg': "No item matches"
-                                         " the keyword `{}`.".format(keyword)
-                        })
-                        response.status_code = 404
-                        return response
+                        data = {'error_msg': "No item matches the keyword "
+                                             "`{}`.".format(keyword)
+                                }
+                        return make_response(data, status_code=404)
 
             if not items:
 
@@ -327,17 +305,14 @@ def create_app(config_mode):
                     items = ShoppingListItems.query.filter_by(
                         shoppinglist_id=list_id)
 
-            results = []
+            data = []
             for item in items:
                 list_details = {
                     'id': item.id,
                     'name': item.name
                 }
-                results.append(list_details)
-            response = jsonify(results)
-            response.status_code = 200
-
-        return response
+                data.append(list_details)
+            return make_response(data, status_code=200)
 
     @flask_api.route('/shoppinglist/<int:list_id>/items/<int:item_id>',
                      methods=['PUT', 'GET', 'DELETE'])
@@ -349,16 +324,15 @@ def create_app(config_mode):
                                                       user_id=user_id).first()
         item = ShoppingListItems.query.filter_by(
             id=item_id, shoppinglist_id=list_id).first()
+
         if not shopping_list or not item:
-            response = jsonify({
-                'error_msg': "Requested shoppinglist item was not found"
-            })
-            response.status_code = 404
-            return response
+            data = {'error_msg': "Requested shoppinglist item was not found"}
+            return make_response(data=data, status_code=404)
 
         if request.method == 'PUT':
             name = str(request.data.get('name', '')).lower().strip()
 
+            # check if item name is valid
             error_message = validate_item_name(name, list_id)
             if error_message:
                 return error_message
@@ -366,80 +340,64 @@ def create_app(config_mode):
             item.name = name
             item.save()
 
-            response = jsonify({
-                'id': item.id,
-                'name': item.name
-            })
-            response.status_code = 200
+            data = {'id': item.id, 'name': item.name}
+            return make_response(data=data, status_code=200)
 
-        elif request.method == 'DELETE':
+        if request.method == 'DELETE':
             item.delete()
-            response = jsonify({
-                "message": "item {} has been deleted "
-                           "successfully".format(item_id)
-            })
-            response.status_code = 200
+            data = {"message": "item {} has been deleted "
+                               "successfully".format(item_id)
+                    }
+            return make_response(data=data, status_code=200)
 
-        else:
-            # retrieve the list with the id provided
-            list_details = {
-                'id': item.id,
-                'name': item.name
-            }
-
-            response = jsonify(list_details)
-            response.status_code = 200
-
-        return response
+        # retrieve the list with the id provided
+        data = {
+            'id': item.id,
+            'name': item.name
+        }
+        return make_response(data, status_code=200)
 
     return flask_api
+
+
+def make_response(data, status_code):
+    response = jsonify(data)
+    response.status_code = status_code
+    return response
 
 
 def validate_title(title):
     user_id = user_logged_in.id
 
-    response = None
     if not title:
-        response = jsonify(
-            {
-                'error_msg': "shoppinglist title must be provided"
-            }
-        )
-        response.status_code = 400
+        data = {
+            'error_msg': "shoppinglist title must be provided"
+        }
+        return make_response(data, status_code=400)
 
     # check if similar shoppinglist owned by same user exists
-    elif Shoppinglists.query.filter_by(title=title,
+    if Shoppinglists.query.filter_by(title=title,
                                        user_id=user_id).first():
-        response = jsonify(
-            {
-                'error_msg': "`{}` already exists".format(title)
-            }
-        )
-        response.status_code = 409
-
-    return response
+        data = {
+            'error_msg': "`{}` already exists".format(title)
+        }
+        return make_response(data, status_code=409)
 
 
 def validate_item_name(name, list_id):
-    response = None
+
     if not name:
-        response = jsonify(
-            {
-                'error_msg': "Item name must be provided"
-            }
-        )
-        response.status_code = 400
+        data = {
+            'error_msg': "Item name must be provided"
+        }
+        return make_response(data, status_code=400)
 
-    elif ShoppingListItems.query.filter_by(
+    if ShoppingListItems.query.filter_by(
             name=name, shoppinglist_id=list_id).first():
-        response = jsonify(
-            {
-                'error_msg': "Item `{}` already exists".format(name)
-            }
-        )
-        response.status_code = 409
-
-    return response
+        data = {
+            'error_msg': "Item `{}` already exists".format(name)
+        }
+        return make_response(data, status_code=409)
 
 
 def sha1_hash(value):
