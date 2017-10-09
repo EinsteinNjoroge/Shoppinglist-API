@@ -38,7 +38,8 @@ def create_app(config_mode):
     @flask_api.errorhandler(404)
     def route_not_found(e):
         data = {
-            "error_msg": "Route does not exist."
+            "error_msg": "Route does not exist. Please check the path you "
+                         "provided and try again"
         }
         return make_response(data, status_code=405)
 
