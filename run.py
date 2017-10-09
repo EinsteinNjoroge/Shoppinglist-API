@@ -7,7 +7,7 @@ from app import create_app
 app = create_app(os.environ.get('FLASK_CONFIG'))
 
 # Initialize swagger documentation plugin
-Swagger(app)
+Swagger(app, template_file='../doc.yaml')
 
 if __name__ == '__main__':
     app.run()

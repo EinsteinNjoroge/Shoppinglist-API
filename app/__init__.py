@@ -26,134 +26,97 @@ def create_app(config_mode):
     db.init_app(flask_api)
     auth = HTTPBasicAuth()
 
+    @flask_api.route('/', methods=['GET'])
+    def index():
+
+        data = {
+            "message": "WELCOME TO THE SHOPPINGLIST API. KEEP TRACK OF YOUR "
+                       "SHOPPING CARTS AND ITEMS."
+        }
+        return make_response(data, status_code=200)
+
     @flask_api.route('/user/register/', methods=['POST'])
     def create_user():
-        """
-            Creating
-            Call this api passing a language name and get back its features
-            ---
-            tags:
-              - User Registration and Authentication
-            responses:
-              500:
-                description: Error The language is not awesome!
-              200:
-                description: A language with its awesomeness
-                schema:
-                  id: awesome
-                  properties:
-                    language:
-                      type: string
-                      description: The language name
-                      default: Lua
-                    features:
-                      type: array
-                      description: The awesomeness list
-                      items:
-                        type: string
-                      default: ["perfect", "simple", "lovely"]
+        """Creates a user account
 
-            """
+            :arg:
+                pword (string): Users password
+                username (string): user's unique name
+
+            :return
+                response (json):
+        """
         # Create a user account with the credentials provided
         pword = str(request.data.get('password', ''))
         username = str(request.data.get('username', '')).lower().strip()
 
         if not username or not pword:
-            response = jsonify({
+            data = {
                 "error_msg": "Please provide a valid username and password"
-            })
-            response.status_code = 400
+            }
+            return make_response(data, status_code=400)
 
-        elif len(pword) < 7:
-            response = jsonify({
+        if len(pword) < 6:
+            data = {
                 "error_msg": "password must be at-least 6 characters long"
-            })
-            response.status_code = 409
+            }
+            return make_response(data, status_code=409)
 
         # Check username is already registered
-        elif User.query.filter_by(username=username).first():
-            response = jsonify({
+        if User.query.filter_by(username=username).first():
+            data = {
                 "error_msg": "username `{}` is already registered. Please "
                              "provide a unique username".format(username)
-            })
-            response.status_code = 409
+            }
+            return make_response(data, status_code=409)
 
-        else:
-            password_hash = sha1_hash(pword)
-            new_user = User(username=username, password_hash=password_hash)
-            new_user.save()
-            response = jsonify({
-                "message": "user `{}` has been created".format(username),
-                "id": new_user.id
-            })
-            response.status_code = 201
+        # Create a user
+        password_hash = sha1_hash(pword)
+        new_user = User(username=username, password_hash=password_hash)
+        new_user.save()
 
-        return response
+        data = {
+            "message": "user `{}` has been created".format(username),
+            "id": new_user.id
+        }
+        return make_response(data, status_code=201)
 
     @flask_api.route('/user/login/', methods=['POST'])
     def authenticate_user():
-        """
-            This is the language awesomeness API
-            Call this api passing a language name and get back its features
-            ---
-            tags:
-              - User Registration and Authentication
-            parameters:
-              - name: language
-                in: path
-                type: string
-                required: true
-                description: The language name
-              - name: size
-                in: query
-                type: integer
-                description: size of awesomeness
-            responses:
-              500:
-                description: Error The language is not awesome!
-              200:
-                description: A language with its awesomeness
-                schema:
-                  id: awesome
-                  properties:
-                    language:
-                      type: string
-                      description: The language name
-                      default: Lua
-                    features:
-                      type: array
-                      description: The awesomeness list
-                      items:
-                        type: string
-                      default: ["perfect", "simple", "lovely"]
-
-            """
         pword = str(request.data.get('password', ''))
         username = str(request.data.get('username', ''))
 
         if not username or not pword:
-            response = jsonify({
+            data = {
                 "error_msg": "Please provide a valid username and password"
-            })
-            response.status_code = 400
+            }
+            return make_response(data, status_code=400)
 
-        elif verify_password(username, pword):
-            token = generate_auth_token(user_logged_in)
-            response = jsonify({
+        if verify_password(username, pword):
+            token = generate_auth_token()
+            data = {
                 "token": token.decode('ascii')
-            })
-            response.status_code = 200
+            }
+            return make_response(data, status_code=200)
 
-        else:
-            response = jsonify({
-                "message": "Wrong credentials combination"
-            })
-            response.status_code = 401
-
-        return response
+        data = {
+            "message": "Wrong credentials combination"
+        }
+        return make_response(data, 401)
 
     @auth.verify_password
     def verify_password(username, pword):
+        """Check if credentials or token provided is authentic
+
+                :arg:
+                    username (string): User's unique name or
+                        authentication token
+                    pword (string): User's password
+
+                :return
+                    (boolen): True if user has been authorised, otherwise
+                    returns False
+            """
         # Attempt to authenticate using token
         user = verify_auth_token(username)
 
@@ -163,178 +126,109 @@ def create_app(config_mode):
             user = User.query.filter_by(username=username,
                                         password_hash=password_hash).first()
         if user:
+            # Credentials are authentic
             global user_logged_in
             user_logged_in = user
             return True
+
         return False
 
     @flask_api.route('/shoppinglist/', methods=['POST', 'GET'])
     @auth.login_required
     def shoppinglists():
-        """
-            This is the language awesomeness API
-            Call this api passing a language name and get back its features
-            ---
-            tags:
-              - Creating and Listing shoppinglists
-            parameters:
-              - name: language
-                in: path
-                type: string
-                required: true
-                description: The language name
-              - name: size
-                in: query
-                type: integer
-                description: size of awesomeness
-            responses:
-              500:
-                description: Error The language is not awesome!
-              200:
-                description: A language with its awesomeness
-                schema:
-                  id: awesome
-                  properties:
-                    language:
-                      type: string
-                      description: The language name
-                      default: Lua
-                    features:
-                      type: array
-                      description: The awesomeness list
-                      items:
-                        type: string
-                      default: ["perfect", "simple", "lovely"]
-
-            """
 
         user_id = user_logged_in.id
-        shopping_lists = None
-        limit = None
 
         if request.method == 'POST':
 
             # Create a shoppinglist with title provided
             title = str(request.data.get('title', '')).lower().strip()
 
+            # check if title is valid
             error_message = validate_title(title)
             if error_message:
                 return error_message
 
-            else:
-                shopping_list = Shoppinglists(title=title, user_id=user_id)
-                shopping_list.save()
-                response = jsonify(
-                    {
-                        'id': shopping_list.id,
-                        'title': shopping_list.title
-                    }
-                )
-                response.status_code = 201
-        else:
-            # check if a search keyword has been provided
-            args = request.args
-            if args:
-                if 'limit' in args:
-                    # limit number of results returned
-                    limit = int(args['limit'])
+            # create shoppinglist
+            shopping_list = Shoppinglists(title=title, user_id=user_id)
+            shopping_list.save()
+            data = {
+                'id': shopping_list.id,
+                'title': shopping_list.title
+            }
+            return make_response(data, status_code=201)
 
-                if 'q' in args:
-                    # search for shoppinglists that contain keyword provided
-                    keyword = str(args['q']).lower()
+        # METHOD GET
 
-                    if limit:
-                        shopping_lists = Shoppinglists.query.filter(
-                            Shoppinglists.title.like("%{}%".format(keyword)),
-                            Shoppinglists.user_id == user_id
-                        ).limit(limit).all()
-                    else:
-                        shopping_lists = Shoppinglists.query.filter(
-                            Shoppinglists.title.like("%{}%".format(keyword)),
-                            Shoppinglists.user_id == user_id
-                        ).all()
+        shopping_lists = None
+        limit = None
 
-                    if len(shopping_lists) < 1:
-                        response = jsonify({
-                            'error_msg': "No shoppinglist matches the "
-                                         "keyword `{}`.".format(keyword)
-                        })
-                        response.status_code = 404
-                        return response
+        # check if GET parameters has been parsed with the path
+        args = request.args
+        if args:
 
-            if not shopping_lists:
+            if 'limit' in args:
+                # limit number of results returned
+                limit = int(args['limit'])
+
+            if 'q' in args:
+                # search for shoppinglists that contain keyword provided
+                keyword = str(args['q']).lower()
+
                 if limit:
-                    # Limit number of shoppinglists returned
-                    shopping_lists = Shoppinglists.query.filter_by(
-                        user_id=user_id).limit(limit)
+                    # search with pagination
+                    shopping_lists = Shoppinglists.query.filter(
+                        Shoppinglists.title.like("%{}%".format(keyword)),
+                        Shoppinglists.user_id == user_id
+                    ).limit(limit).all()
+
                 else:
-                    # Retrieve all shoppinglists
-                    shopping_lists = Shoppinglists.query.filter_by(
-                        user_id=user_id).all()
+                    # search without pagination
+                    shopping_lists = Shoppinglists.query.filter(
+                        Shoppinglists.title.like("%{}%".format(keyword)),
+                        Shoppinglists.user_id == user_id
+                    ).all()
 
-            results = []
-            for shopping_list in shopping_lists:
-                list_details = {
-                    'id': shopping_list.id,
-                    'title': shopping_list.title
-                }
-                results.append(list_details)
-            response = jsonify(results)
-            response.status_code = 200
+                if len(shopping_lists) < 1:
+                    data = {
+                        'error_msg': "No shoppinglist matches "
+                                     "the keyword `{}`.".format(keyword)
+                    }
+                    return make_response(data, 404)
 
-        return response
+        if not shopping_lists:
+            if limit:
+                # Limit number of shoppinglists returned
+                shopping_lists = Shoppinglists.query.filter_by(
+                    user_id=user_id).limit(limit)
+            else:
+                # Retrieve all shoppinglists
+                shopping_lists = Shoppinglists.query.filter_by(
+                    user_id=user_id).all()
+
+        data = []
+        for shopping_list in shopping_lists:
+            list_details = {
+                'id': shopping_list.id,
+                'title': shopping_list.title
+            }
+            data.append(list_details)
+        return make_response(data, status_code=200)
 
     @flask_api.route('/shoppinglist/<int:list_id>',
                      methods=['PUT', 'GET', 'DELETE'])
     @auth.login_required
     def shoppinglist(list_id):
-        """
-            This is the language awesomeness API
-            Call this api passing a language name and get back its features
-            ---
-            tags:
-              - Manipulating shoppinglists
-            parameters:
-              - name: language
-                in: path
-                type: string
-                required: true
-                description: The language name
-              - name: size
-                in: query
-                type: integer
-                description: size of awesomeness
-            responses:
-              500:
-                description: Error The language is not awesome!
-              200:
-                description: A language with its awesomeness
-                schema:
-                  id: awesome
-                  properties:
-                    language:
-                      type: string
-                      description: The language name
-                      default: Lua
-                    features:
-                      type: array
-                      description: The awesomeness list
-                      items:
-                        type: string
-                      default: ["perfect", "simple", "lovely"]
-
-            """
         user_id = user_logged_in.id
 
         # check if shoppinglist with id <list_id> exists
         shopping_list = Shoppinglists.query.filter_by(id=list_id,
                                                       user_id=user_id).first()
         if not shopping_list:
-            response = jsonify({
+            data = {
                 'error_msg': "Requested shoppinglist was not found"
-            })
-            response.status_code = 404
-            return response
+            }
+            return make_response(data, status_code=404)
 
         if request.method == 'PUT':
             title = str(request.data.get('title', '')).lower().strip()
@@ -345,84 +239,38 @@ def create_app(config_mode):
 
             shopping_list.title = title
             shopping_list.save()
-
-            response = jsonify({
-                'id': shopping_list.id,
-                'title': shopping_list.title
-            })
-            response.status_code = 200
-
-        elif request.method == 'DELETE':
-
-            shopping_list.delete()
-            response = jsonify({
-                "message": "shoppinglist {} has been deleted "
-                           "successfully".format(list_id)
-            })
-            response.status_code = 200
-
-        else:
-            # retrieve the list with the id provided
-            list_details = {
+            data = {
                 'id': shopping_list.id,
                 'title': shopping_list.title
             }
+            return make_response(data, 200)
 
-            response = jsonify(list_details)
-            response.status_code = 200
+        if request.method == 'DELETE':
+            shopping_list.delete()
+            data = {
+                "message": "shoppinglist {} has been deleted "
+                           "successfully".format(list_id)
+            }
+            return make_response(data, status_code=200)
 
-        return response
+        # retrieve the list with the id provided
+        list_details = {
+            'id': shopping_list.id,
+            'title': shopping_list.title
+        }
+        return make_response(list_details, status_code=200)
 
     @flask_api.route('/shoppinglist/<int:list_id>/items/',
                      methods=['POST', 'GET'])
     @auth.login_required
     def shoppinglist_items(list_id):
-        """
-            This is the language awesomeness API
-            Call this api passing a language name and get back its features
-            ---
-            tags:
-              - Creating and Retrieving shoppinglists
-            parameters:
-              - name: language
-                in: path
-                type: string
-                required: true
-                description: The language name
-              - name: size
-                in: query
-                type: integer
-                description: size of awesomeness
-            responses:
-              500:
-                description: Error The language is not awesome!
-              200:
-                description: A language with its awesomeness
-                schema:
-                  id: awesome
-                  properties:
-                    language:
-                      type: string
-                      description: The language name
-                      default: Lua
-                    features:
-                      type: array
-                      description: The awesomeness list
-                      items:
-                        type: string
-                      default: ["perfect", "simple", "lovely"]
-
-            """
 
         user_id = user_logged_in.id
         shopping_list = Shoppinglists.query.filter_by(id=list_id,
                                                       user_id=user_id).first()
         if not shopping_list:
-            response = jsonify({
-                'error_msg': "Requested shoppinglist was not found"
-            })
-            response.status_code = 404
-            return response
+            data = {'error_msg': "Requested shoppinglist was not found"}
+            return make_response(data, status_code=404)
 
         if request.method == 'POST':
             # Create shoppinglist item with the name provided
@@ -433,16 +281,13 @@ def create_app(config_mode):
             if error_message:
                 return error_message
 
-            else:
-                item = ShoppingListItems(name=name, shoppinglist_id=list_id)
-                item.save()
-                response = jsonify(
-                    {
-                        'id': item.id,
-                        'name': item.name
-                    }
-                )
-                response.status_code = 201
+            item = ShoppingListItems(name=name, shoppinglist_id=list_id)
+            item.save()
+            data = {
+                'id': item.id,
+                'name': item.name
+            }
+            return make_response(data, status_code=201)
 
         else:
             items = None
@@ -478,12 +323,9 @@ def create_app(config_mode):
 
                     # if no items contains keyword
                     if len(items) < 1:
-                        response = jsonify({
-                            'error_msg': "No item matches"
-                                         " the keyword `{}`.".format(keyword)
-                        })
-                        response.status_code = 404
-                        return response
+                        data = {'error_msg': "No item matches the keyword "
+                                             "`{}`.".format(keyword)}
+                        return make_response(data, status_code=404)
 
             if not items:
 
@@ -496,74 +338,34 @@ def create_app(config_mode):
                     items = ShoppingListItems.query.filter_by(
                         shoppinglist_id=list_id)
 
-            results = []
+            data = []
             for item in items:
                 list_details = {
                     'id': item.id,
                     'name': item.name
                 }
-                results.append(list_details)
-            response = jsonify(results)
-            response.status_code = 200
-
-        return response
+                data.append(list_details)
+            return make_response(data, status_code=200)
 
     @flask_api.route('/shoppinglist/<int:list_id>/items/<int:item_id>',
                      methods=['PUT', 'GET', 'DELETE'])
     @auth.login_required
     def shoppinglist_item(list_id, item_id):
-        """
-            This is the language awesomeness API
-            Call this api passing a language name and get back its features
-            ---
-            tags:
-              - Awesomeness Language API
-            parameters:
-              - name: language
-                in: path
-                type: string
-                required: true
-                description: The language name
-              - name: size
-                in: query
-                type: integer
-                description: size of awesomeness
-            responses:
-              500:
-                description: Error The language is not awesome!
-              200:
-                description: A language with its awesomeness
-                schema:
-                  id: awesome
-                  properties:
-                    language:
-                      type: string
-                      description: The language name
-                      default: Lua
-                    features:
-                      type: array
-                      description: The awesomeness list
-                      items:
-                        type: string
-                      default: ["perfect", "simple", "lovely"]
-
-            """
 
         user_id = user_logged_in.id
         shopping_list = Shoppinglists.query.filter_by(id=list_id,
                                                       user_id=user_id).first()
         item = ShoppingListItems.query.filter_by(
             id=item_id, shoppinglist_id=list_id).first()
+
         if not shopping_list or not item:
-            response = jsonify({
-                'error_msg': "Requested shoppinglist item was not found"
-            })
-            response.status_code = 404
-            return response
+            data = {'error_msg': "Requested shoppinglist item was not found"}
+            return make_response(data=data, status_code=404)
 
         if request.method == 'PUT':
             name = str(request.data.get('name', '')).lower().strip()
 
+            # check if item name is valid
             error_message = validate_item_name(name, list_id)
             if error_message:
                 return error_message
@@ -571,80 +373,95 @@ def create_app(config_mode):
             item.name = name
             item.save()
 
-            response = jsonify({
-                'id': item.id,
-                'name': item.name
-            })
-            response.status_code = 200
+            data = {'id': item.id, 'name': item.name}
+            return make_response(data=data, status_code=200)
 
-        elif request.method == 'DELETE':
+        if request.method == 'DELETE':
             item.delete()
-            response = jsonify({
-                "message": "item {} has been deleted "
-                           "successfully".format(item_id)
-            })
-            response.status_code = 200
+            data = {"message": "item {} has been deleted "
+                               "successfully".format(item_id)}
+            return make_response(data=data, status_code=200)
 
-        else:
-            # retrieve the list with the id provided
-            list_details = {
-                'id': item.id,
-                'name': item.name
-            }
-
-            response = jsonify(list_details)
-            response.status_code = 200
-
-        return response
+        # retrieve the list with the id provided
+        data = {
+            'id': item.id,
+            'name': item.name
+        }
+        return make_response(data, status_code=200)
 
     return flask_api
 
 
+def make_response(data, status_code):
+    """Convert dictionary provided to a json array and adds a status code to
+    the dictionary
+
+        :arg:
+            data (dict): Dictionary to be converted to json array
+            status_code (int):
+
+        :return
+            response (json):
+    """
+    response = jsonify(data)
+    response.status_code = status_code
+    return response
+
+
 def validate_title(title):
+    """Validates that a title has the at-least one character and that no
+        other shoppinglist - belonging to the current user - has a similar
+        title
+
+        :arg:
+            title (string): The title of shoppinglist to be created
+
+        :return
+            response (json): Error message generated if any, otherwise
+            returns None
+    """
     user_id = user_logged_in.id
 
-    response = None
     if not title:
-        response = jsonify(
-            {
-                'error_msg': "shoppinglist title must be provided"
-            }
-        )
-        response.status_code = 400
+        data = {
+            'error_msg': "shoppinglist title must be provided"
+        }
+        return make_response(data, status_code=400)
 
     # check if similar shoppinglist owned by same user exists
-    elif Shoppinglists.query.filter_by(title=title,
-                                       user_id=user_id).first():
-        response = jsonify(
-            {
-                'error_msg': "`{}` already exists".format(title)
-            }
-        )
-        response.status_code = 409
-
-    return response
+    if Shoppinglists.query.filter_by(title=title,
+                                     user_id=user_id).first():
+        data = {
+            'error_msg': "`{}` already exists".format(title)
+        }
+        return make_response(data, status_code=409)
 
 
 def validate_item_name(name, list_id):
-    response = None
+    """Validates that a name has the at-least one character and that no
+    other item - belonging to the current user - has a similar name
+
+        :arg:
+            name (string): The name of item to be created
+            list_id (int): ID of the shoppinglist where item will be created
+
+        :return
+            response (json): Error message generated if any, otherwise
+            returns None
+    """
+
     if not name:
-        response = jsonify(
-            {
-                'error_msg': "Item name must be provided"
-            }
-        )
-        response.status_code = 400
+        data = {
+            'error_msg': "Item name must be provided"
+        }
+        return make_response(data, status_code=400)
 
-    elif ShoppingListItems.query.filter_by(
+    if ShoppingListItems.query.filter_by(
             name=name, shoppinglist_id=list_id).first():
-        response = jsonify(
-            {
-                'error_msg': "Item `{}` already exists".format(name)
-            }
-        )
-        response.status_code = 409
-
-    return response
+        data = {
+            'error_msg': "Item `{}` already exists".format(name)
+        }
+        return make_response(data, status_code=409)
 
 
 def sha1_hash(value):
@@ -670,16 +487,33 @@ def sha1_hash(value):
     return hashed_value
 
 
-def generate_auth_token(user):
+def generate_auth_token():
+    """Creates a user authentication token using the user's ID
+
+        :arg:
+            user (object): User to be authenticated
+
+        :return
+            (byte): Authentication token
+    """
     s = Serializer(secret_key, expires_in=600)
-    return s.dumps({'id': user.id})
+    return s.dumps({'id': user_logged_in.id})
 
 
 def verify_auth_token(token):
-    s = Serializer(secret_key)
+    """Checks an authentication token to validate that it has a valid user's ID
+    and is not expired
+
+        :arg:
+            token (string): Authentication token provided
+
+        :return
+            (boolean): True if token is valid otherwise returns False
+    """
+    serializer = Serializer(secret_key)
 
     try:
-        data = s.loads(token)
+        data = serializer.loads(token)
     except SignatureExpired:
         return None  # valid token, but expired
     except BadSignature:

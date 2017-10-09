@@ -52,13 +52,6 @@ You can access the hosted version  **[here](https://einstein-shoppinglist-api.he
 https://einstein-shoppinglist-api.herokuapp.com/
 
 
-
-> [http://127.0.0.1:5000/login](http://127.0.0.1:5000/login)
-
-![postman login](https://raw.githubusercontent.com/EinsteinCarrey/Shoppinglist-API/migration/Designs/screenshots/postman-login.png)
-
-
-
 ##### More documentation can be found [here](https://einstein-shoppinglist-api.herokuapp.com/apidocs/)
 https://einstein-shoppinglist-api.herokuapp.com/apidocs/
 
@@ -67,16 +60,16 @@ https://einstein-shoppinglist-api.herokuapp.com/apidocs/
 
 | End-Points                               | Functionality                            |
 | ---------------------------------------- | ---------------------------------------- |
-| POST /auth/login                         | Logs a user in and generates a unique token |
-| POST /auth/register                      | Register a user                          |
+| POST /user/login                         | Logs a user in and generates a unique token |
+| POST /user/register                      | Register a user                          |
 | POST /shoppinglist/                      | Create a new shopping list               |
 | GET /shoppinglist/                       | List all the created shopping lists that belongs to the logged in user |
 | PUT /shoppinglist/`<shopping-list id>`   | Updates the specified shopping list      |
-| DELETE /shoppinglist/`<shopping-list id>`/item/`<item id>` | Delete a specified item in a shopping list |
-| POST /shoppinglist/`<shopping-list id>`/items/ | Create a new item in shopping list       |
-| PUT  /shoppinglist/`<shopping-list id>`/items/`<item id>` | Delete an item in a shopping list        |
-| GET /shoppinglist/`<shopping-list id>`/items/ | list all items in a shopping list        |
 | DELETE /shoppinglist/`<shopping-list id>` | Delete the specified shopping list       |
+| POST /shoppinglist/`<shopping-list id>`/items/ | Create a new item in shopping list       |
+| PUT  /shoppinglist/`<shopping-list id>`/items/`<item id>` | Update an item in a shopping list        |
+| GET /shoppinglist/`<shopping-list id>`/items/ | list all items in a shopping list        |
+| DELETE /shoppinglist/`<shopping-list id>`/item/`<item id>` | Delete a specified item in a shopping list |
 
 
 

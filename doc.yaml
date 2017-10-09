@@ -1,0 +1,461 @@
+---
+basePath: "/"
+
+info:
+  description: A shopping-list app to help you keep track of your shopping carts.
+  title: ShoppingList API
+  version: 1.0.0
+
+paths:
+
+  "/user/register/":
+    post:
+      tags:
+        - Authentication
+      summary: user account registration
+      parameters:
+        - name: password
+          in: body
+          type: string
+          required: true
+          default: "password_123"
+        - name: username
+          in: body
+          type: string
+          required: true
+          default: "username"
+      responses:
+        201:
+          description: User acount has been created successfully
+          schema:
+            properties:
+              message:
+                type: string
+                description: success message
+                default: User `username` has been created
+              id:
+                type: integer
+                description: User's ID
+                default: 20
+        409:
+          description: Password provided is shorter than 6 characters (OR) Username `username` is already registered.
+        400:
+          description: Username or Password provided is not valid
+
+  "/user/login/":
+    post:
+      tags:
+        - Authentication
+      summary: User authentication
+      parameters:
+      - name: password
+        in: body
+        type: string
+        required: true
+        default: "password_123"
+      - name: username
+        in: body
+        type: string
+        required: true
+        default: "username"
+      responses:
+        200:
+          description: User has been authenticated successfully
+          schema:
+            properties:
+              token:
+                type: byte
+                description: Authentication token awarded to user
+                default: "W3dEdRe4T6v66f7fggg76g24phfQ6FgtDRTYghFDRETR"
+        401:
+          description: Wrong credentials combination
+          schema:
+            properties:
+              error_msg:
+                type: string
+                description: Error message returned
+                default: "Wrong credentials combination"
+        400:
+          description: Username or Password not provided
+          schema:
+            properties:
+              error_msg:
+                type: string
+                description: Error message returned
+                default: "Please provide a valid username and password"
+
+  "/shoppinglist/":
+    post:
+      tags:
+        - Creating, Retreiving and manipulating lists
+      summary: Create a new shoppinglist
+      parameters:
+        - name: title
+          in: body
+          type: string
+          required: true
+          default: "Weekend party"
+          schema:
+            properties:
+              title:
+                type: string
+                description: The shopping-list's title
+                default: "Weekend party"
+      responses:
+        201:
+          description: Shoppinglist has been created successfully
+          schema:
+            properties:
+              title:
+                type: string
+                description: Title of shoppinglist created
+                default: "Weekend party"
+              id:
+                type: integer
+                description: ID of shoppinglist
+                default: 20
+        400:
+          description: Title was not provided
+          schema:
+          properties:
+            error_msg:
+              type: string
+              description: Error message returned
+              default: "shoppinglist title must be provided"
+        409:
+          description: A shoppinglist with a similar title already exists
+          schema:
+          properties:
+            error_msg:
+              type: string
+              description: Error message returned
+              default: "`weekend party` already exists"
+
+    get:
+      tags:
+        - Creating, Retreiving and manipulating lists
+      summary: Retrieve all shoppinglists owned by current user
+      parameters:
+        - name: limit
+          in: path
+          type: string
+          schema:
+            properties:
+              limit:
+                type: integer
+                description: Retrieve a specific number of results
+                default: 10
+      responses:
+        201:
+          description: List of shoppinglists retrieved
+          schema:
+            properties:
+              title:
+                type: string
+                description: Title of shoppinglist
+                default: "Weekend party"
+              id:
+                type: integer
+                description: ID of shoppinglist
+                default: 20
+        401:
+          description: Username and password provided were not authentic
+
+  "/shoppinglist/{list_id}/":
+    get:
+      tags:
+        - Creating, Retreiving and manipulating lists
+      summary: Retrieve specific shoppinglist identified by list_id
+      parameters:
+        - name: list_id
+          in: query
+          type: integer
+          schema:
+            properties:
+              list_id:
+                type: integer
+                description: Identifier of shoppinglist to be retrieved
+                default: 20
+      responses:
+        200:
+          description: List found
+          schema:
+            properties:
+              title:
+                type: string
+                description: Title of shoppinglist
+                default: "Weekend party"
+              id:
+                type: integer
+                description: ID of shoppinglist
+                default: 20
+        404:
+          description: There is no shoppinglist that has the id provided
+
+    put:
+      tags:
+        - Creating, Retreiving and manipulating lists
+      summary: Update an existing shoppinglist
+      parameters:
+        - name: list_id
+          in: query
+          type: integer
+          schema:
+            properties:
+              list_id:
+                type: integer
+                description: Identifier of shoppinglist to be updated
+                default: 20
+        - name: title
+          in: body
+          type: string
+          schema:
+            properties:
+              title:
+                type: string
+                description: New title of shoppinglist
+                default: "Weekend tour"
+      responses:
+        200:
+          description: List has been updated successfully
+          schema:
+            properties:
+              title:
+                type: string
+                description: Title of shoppinglist
+                default: "Weekend tour"
+              id:
+                type: integer
+                description: ID of shoppinglist
+                default: 20
+        400:
+          description: Title was not provided
+        409:
+          description: Shoppinglist with similar tityle already exists
+        404:
+          description: There is no shoppinglist that has the id provided
+
+    delete:
+      tags:
+        - Creating, Retreiving and manipulating lists
+      summary: Delete an existing shoppinglist
+      parameters:
+        - name: list_id
+          in: query
+          type: integer
+          schema:
+            properties:
+              list_id:
+                type: integer
+                description: Identifier of shoppinglist to be updated
+                default: 20
+      responses:
+        200:
+          description: List has been deleted successfully
+          schema:
+            properties:
+              message:
+                type: string
+                description: List has been deleted
+                default: "Shoppinglist 20 has been deleted successfully"
+        404:
+          description: There is no shoppinglist that has the id provided
+
+  "/shoppinglist/{list_id}/items":
+    get:
+      tags:
+        - Creating, Retreiving and manipulating shoppinglist items
+      summary: Retrieve items in a specific shoppinglist identified by list_id
+      parameters:
+        - name: list_id
+          in: query
+          type: integer
+          schema:
+            properties:
+              list_id:
+                type: integer
+                description: Identifier of shoppinglist
+                default: 20
+      responses:
+        200:
+          description: Items retrieved successfully
+          schema:
+            properties:
+              items:
+                type: list
+                description: items in shoppinglist
+                default: [
+                    {"id": 20, "name": "sausages"},
+                    {"id": 70, "name": "nyama bites"}
+                  ]
+        404:
+          description: There is no shoppinglist that has the id provided
+    post:
+      tags:
+        - Creating, Retreiving and manipulating shoppinglist items
+      summary: Create an item in shoppinglist
+      parameters:
+        - name: list_id
+          in: query
+          type: integer
+          schema:
+            properties:
+              list_id:
+                type: integer
+                description: Shoppinglist ID
+                default: 20
+        - name: name
+          in: body
+          type: string
+          schema:
+            properties:
+              name:
+                type: string
+                description: Name of item to be created
+                default: "Barbecue rack"
+      responses:
+        201:
+          description: Items has been created successfully
+          schema:
+            properties:
+              name:
+                type: string
+                description: Item that has been created
+                default: "Barbecue rack"
+              id:
+                type: integer
+                description: ID of item that has  been created
+                default: 50
+        404:
+          description: There is no shoppinglist that has the id provided
+        409:
+          description: There already exists an item with a similar name
+
+  "/shoppinglist/{list_id}/items/{item_id}":
+    get:
+      tags:
+        - Creating, Retreiving and manipulating shoppinglist items
+      summary: Retrieve a specific item in a specific shoppinglist
+      parameters:
+        - name: list_id
+          in: query
+          type: integer
+          schema:
+            properties:
+              list_id:
+                type: integer
+                description: Identifier of shoppinglist
+                default: 20
+        - name: item_id
+          in: query
+          type: integer
+          schema:
+            properties:
+              list_id:
+                type: integer
+                description: Identifier of item
+                default: 50
+      responses:
+        200:
+          description: Items retrieved successfully
+          schema:
+            properties:
+              items:
+                type: list
+                description: item in shoppinglist
+                default: [
+                    {"id": 50, "name": "nyama bites"}
+                  ]
+        404:
+          description: There is no item that has the id provided
+    put:
+      tags:
+        - Creating, Retreiving and manipulating shoppinglist items
+      summary: Update an item
+      parameters:
+        - name: list_id
+          in: query
+          type: integer
+          schema:
+            properties:
+              list_id:
+                type: integer
+                description: Shoppinglist ID
+                default: 20
+        - name: item_id
+          in: query
+          type: integer
+          schema:
+            properties:
+              list_id:
+                type: integer
+                description: item ID
+                default: 50
+        - name: name
+          in: body
+          type: string
+          schema:
+            properties:
+              name:
+                type: string
+                description: New name of item
+                default: "Sausage packs"
+      responses:
+        200:
+          description: Items has been updated successfully
+          schema:
+            properties:
+              name:
+                type: string
+                description: New name of item
+                default: "Sausage packs"
+              id:
+                type: integer
+                description: ID of item that has  been updated
+                default: 50
+        404:
+          description: There is no item that has the id provided
+        409:
+          description: There already exists an item with a similar name
+
+    delete:
+      tags:
+        - Creating, Retreiving and manipulating shoppinglist items
+      summary: Delete an item
+      parameters:
+        - name: list_id
+          in: query
+          type: integer
+          schema:
+            properties:
+              list_id:
+                type: integer
+                description: Shoppinglist ID
+                default: 20
+        - name: item_id
+          in: query
+          type: integer
+          schema:
+            properties:
+              list_id:
+                type: integer
+                description: item ID
+                default: 50
+      responses:
+        200:
+          description: Items has been deleted successfully
+          schema:
+            properties:
+              message:
+                type: string
+                description: Message returned from server
+                default: "Item 50 has been deleted successfully"
+                default: 50
+        404:
+          description: There is no item that has the id provided
+
+securityDefinitions:
+  basicAuth:
+    type : basic
+
+swagger: '2.0'
