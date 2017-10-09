@@ -28,7 +28,8 @@ These instructions will get you a copy of the project up and running on your loc
 
 > https://github.com/EinsteinCarrey/Shoppinglist-API.git
 
-1. ##### Create a virtual environment
+
+##### Create a virtual environment
 
    ​	Use this [**guide**](http://sourabhbajaj.com/mac-setup/Python/virtualenv.html).
 
@@ -37,6 +38,32 @@ These instructions will get you a copy of the project up and running on your loc
    1. ##### Install project dependencies
 
      run the command `pip -r install requirements.txt` on the command line
+
+
+#### Environment Variables
+    Create a .env file in the root directory and add the following:
+    ```
+    export FLASK_CONFIG="development"
+    export db_url="postgresql://{username}:{password}@localhost/flask_api_db"
+    ```
+
+
+#### Migrations
+    On your psql console, create your database:
+    ```
+    > CREATE DATABASE flask_api_db;
+    ```
+    Then, make and apply your Migrations
+    ```
+    (venv)$ python manage.py db init
+
+    (venv)$ python manage.py db migrate
+    ```
+
+    And finally, migrate your migrations to persist on the DB
+    ```
+    (venv)$ python manage.py db upgrade
+    ```
 
 
 ##### Run the server

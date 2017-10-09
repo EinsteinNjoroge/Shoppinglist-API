@@ -14,13 +14,13 @@ paths:
         - Authentication
       summary: user account registration
       parameters:
-        - name: password
-          in: body
+        - in: body
+          name: password
           type: string
           required: true
           default: "password_123"
-        - name: username
-          in: body
+        - in: body
+          name: username
           type: string
           required: true
           default: "username"
