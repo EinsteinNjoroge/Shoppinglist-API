@@ -112,6 +112,15 @@ def create_app(config_mode):
         }
         return make_response(data, 401)
 
+    @flask_api.route('/user/logout/', methods=['GET'])
+    def logout_user():
+        global user_logged_in
+        user_logged_in = None
+        data = {
+            "message": "User logged out"
+        }
+        return make_response(data, 200)
+
     @auth.verify_password
     def verify_password(username, pword):
         """Check if credentials or token provided is authentic
