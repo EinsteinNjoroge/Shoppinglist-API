@@ -331,21 +331,12 @@ paths:
         409:
           description: There already exists an item with a similar name
 
-  "/shoppinglist/{list_id}/items/{item_id}":
+  "/items/{item_id}":
     get:
       tags:
         - Creating, Retreiving and manipulating shoppinglist items
       summary: Retrieve a specific item in a specific shoppinglist
       parameters:
-        - name: list_id
-          in: query
-          type: integer
-          schema:
-            properties:
-              list_id:
-                type: integer
-                description: Identifier of shoppinglist
-                default: 20
         - name: item_id
           in: query
           type: integer
@@ -373,15 +364,6 @@ paths:
         - Creating, Retreiving and manipulating shoppinglist items
       summary: Update an item
       parameters:
-        - name: list_id
-          in: query
-          type: integer
-          schema:
-            properties:
-              list_id:
-                type: integer
-                description: Shoppinglist ID
-                default: 20
         - name: item_id
           in: query
           type: integer
@@ -423,15 +405,6 @@ paths:
         - Creating, Retreiving and manipulating shoppinglist items
       summary: Delete an item
       parameters:
-        - name: list_id
-          in: query
-          type: integer
-          schema:
-            properties:
-              list_id:
-                type: integer
-                description: Shoppinglist ID
-                default: 20
         - name: item_id
           in: query
           type: integer

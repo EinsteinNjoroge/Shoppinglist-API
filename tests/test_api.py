@@ -353,7 +353,7 @@ class TestAPI(TestCase):
 
         # test API can update shoppinglist item
         update_item_resource = self.client().put(
-            '/shoppinglist/{}/items/{}'.format(shoppinglist_id, item_id),
+            '/items/{}'.format(item_id),
             data={'name': 'Swimming floaters'},
             headers=headers
         )
@@ -368,7 +368,7 @@ class TestAPI(TestCase):
 
         # test API can delete shoppinglist item
         delete_item_resource = self.client().delete(
-            '/shoppinglist/{}/items/{}'.format(shoppinglist_id, item_id),
+            '/items/{}'.format(item_id),
             headers=headers
         )
         self.assertEqual(delete_item_resource.status_code, 200)
@@ -398,7 +398,7 @@ class TestAPI(TestCase):
 
         # attempt to retrieve item that does not exist
         get_shoppinglist_resource = self.client().get(
-            '/shoppinglist/{}/items/12345'.format(shoppinglist_id),
+            '/items/12345'.format(shoppinglist_id),
             headers=headers
         )
         self.assertEqual(get_shoppinglist_resource.status_code, 404)

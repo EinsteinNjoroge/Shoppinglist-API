@@ -43,6 +43,13 @@ def create_app(config_mode):
         }
         return make_response(data, status_code=405)
 
+    @flask_api.errorhandler(405)
+    def method_not_allowed(e):
+        data = {
+            "error_msg": "This method is not allowed on this path"
+        }
+        return make_response(data, status_code=405)
+
     @flask_api.route('/user/register/', methods=['POST'])
     def create_user():
         """Creates a user account
@@ -383,18 +390,25 @@ def create_app(config_mode):
                 data.append(list_details)
             return make_response(data, status_code=200)
 
-    @flask_api.route('/shoppinglist/<int:list_id>/items/<int:item_id>',
+    @flask_api.route('/items/<int:item_id>',
                      methods=['PUT', 'GET', 'DELETE'])
     @auth.login_required
-    def shoppinglist_item(list_id, item_id):
+    def shoppinglist_item(item_id):
 
         user_id = user_logged_in.id
-        shopping_list = Shoppinglists.query.filter_by(id=list_id,
-                                                      user_id=user_id).first()
-        item = ShoppingListItems.query.filter_by(
-            id=item_id, shoppinglist_id=list_id).first()
 
-        if not shopping_list or not item:
+        item = ShoppingListItems.query.filter_by(
+            id=item_id).first()
+
+        if not item:
+            data = {'error_msg': "Requested shoppinglist item was not found"}
+            return make_response(data=data, status_code=404)
+
+        shoppinglist_id = item.shoppinglist_id
+        shopping_list = Shoppinglists.query.filter_by(id=shoppinglist_id,
+                                                      user_id=user_id).first()
+
+        if not shopping_list:
             data = {'error_msg': "Requested shoppinglist item was not found"}
             return make_response(data=data, status_code=404)
 
@@ -402,7 +416,7 @@ def create_app(config_mode):
             name = str(request.data.get('name', '')).lower().strip()
 
             # check if item name is valid
-            error_message = validate_item_name(name, list_id)
+            error_message = validate_item_name(name, shoppinglist_id)
             if error_message:
                 return error_message
 

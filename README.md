@@ -100,9 +100,9 @@ https://einstein-shoppinglist-api.herokuapp.com/apidocs/
 | PUT /shoppinglist/`<shopping-list id>`   | Updates the specified shopping list      |
 | DELETE /shoppinglist/`<shopping-list id>` | Delete the specified shopping list       |
 | POST /shoppinglist/`<shopping-list id>`/items/ | Create a new item in shopping list       |
-| PUT  /shoppinglist/`<shopping-list id>`/items/`<item id>` | Update an item in a shopping list        |
-| GET /shoppinglist/`<shopping-list id>`/items/ | list all items in a shopping list        |
-| DELETE /shoppinglist/`<shopping-list id>`/item/`<item id>` | Delete a specified item in a shopping list |
+| PUT  /items/`<item id>` | Update an item in a shopping list        |
+| GET /items/ | list all items in a shopping list        |
+| DELETE /item/`<item id>` | Delete a specified item in a shopping list |
 
 
 
