@@ -1,0 +1,26 @@
+language: python
+
+python:
+  - "3.6"
+  - "3.3"
+
+# install dependencies
+install:
+  - "pip install -r requirements.txt"
+
+services:
+  - "postgresql"
+
+before_script:
+  - psql -c "CREATE USER test_user WITH PASSWORD '123456';" -U postgres
+  - psql -c 'CREATE DATABASE test_db owner test_user;' -U postgres
+
+# run test and report test-coverage to coveralls.io
+script:
+  - "coverage run --source=app -m py.test && coverage report"
+  - "coveralls"
+
+# submit results
+after_success:
+  - "coveralls"
+  - "codacy"
