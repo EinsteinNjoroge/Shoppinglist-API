@@ -112,15 +112,6 @@ def create_app(config_mode):
         }
         return make_response(data, 401)
 
-    @flask_api.route('/user/logout/', methods=['GET'])
-    def logout_user():
-        global user_logged_in
-        user_logged_in = None
-        data = {
-            "message": "User logged out"
-        }
-        return make_response(data, 200)
-
     @auth.verify_password
     def verify_password(username, pword):
         """Check if credentials or token provided is authentic
@@ -149,6 +140,34 @@ def create_app(config_mode):
             return True
 
         return False
+
+    @flask_api.route('/user/logout/', methods=['GET'])
+    def logout_user():
+        global user_logged_in
+        user_logged_in = None
+        data = {
+            "message": "User logged out"
+        }
+        return make_response(data, 200)
+
+    @flask_api.route('/user/reset_password/', methods=['PUT'])
+    @auth.login_required
+    def reset_password():
+
+        pword = str(request.data.get('password', ''))
+
+        if not pword:
+            data = {
+                "error_msg": "Please provide a valid password"
+            }
+            return make_response(data, status_code=400)
+
+        user_logged_in.password_hash = sha1_hash(pword)
+        user_logged_in.save()
+        data = {
+            'message': "Password has been changed successfully"
+        }
+        return make_response(data, 200)
 
     @flask_api.route('/shoppinglist/', methods=['POST', 'GET'])
     @auth.login_required

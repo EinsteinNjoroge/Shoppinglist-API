@@ -100,6 +100,20 @@ class TestAPI(TestCase):
         self.assertIn('test_user', str(create_user_resource.data))
         self.assertIn('id', str(create_user_resource.data))
 
+    def test_api_reset_password(self):
+        headers = self.get_authorization_header()
+
+        # reset user password
+        reset_password_resource = self.client().put(
+            '/user/reset_password/',
+            data={'password': 'new_password'},
+            headers=headers
+        )
+
+        self.assertEqual(reset_password_resource.status_code, 200)
+        self.assertIn('Password has been changed successfully',
+                      str(reset_password_resource.data))
+
     def test_api_create_duplicate_username(self):
         # create a user
         user_data1 = {'username': 'user100', 'password': 'test_password'}
