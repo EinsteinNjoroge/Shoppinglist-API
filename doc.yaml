@@ -84,10 +84,10 @@ paths:
                 description: Error message returned
                 default: "Please provide a valid username and password"
 
-  "/shoppinglists/":
+  "/shoppinglist/":
     post:
       tags:
-        - Creating and manipulating lists
+        - Creating, Retreiving and manipulating lists
       summary: Create a new shoppinglist
       parameters:
         - name: title
@@ -133,7 +133,7 @@ paths:
 
     get:
       tags:
-        - Creating and manipulating lists
+        - Creating, Retreiving and manipulating lists
       summary: Retrieve all shoppinglists owned by current user
       parameters:
         - name: limit
@@ -143,249 +143,316 @@ paths:
             properties:
               limit:
                 type: integer
-                description: The shopping-list's title
-                default: "Weekendparty"
+                description: Retrieve a specific number of results
+                default: 10
       responses:
         201:
-          description: Shoppinglist has been created successfully
+          description: List of shoppinglists retrieved
           schema:
             properties:
               title:
                 type: string
-                description: Title of shoppinglist created
+                description: Title of shoppinglist
                 default: "Weekend party"
               id:
                 type: integer
                 description: ID of shoppinglist
                 default: 20
+        401:
+          description: Username and password provided were not authentic
 
-  "/list/{list_id}/":
-      get:
-        operationId: user_get_one
-        parameters:
-          - name: x-access-token
-            in: header
-            type: string
-            required: true
-          - name: list_id
-            in: path
-            type: int
-            required: true
-        responses:
-          200:
-            description: Success
-          204:
-            description: List content was not found.
-          406:
-            description: invalid or missing data.
-        tags:
-          - List Functionalities
-      put:
-        operationId: update_name_one
-        parameters:
-          - name: x-access-token
-            in: header
-            type: string
-            required: true
-          - name: list_id
-            in: path
-            type: int
-            required: true
-          - name: New_List_Name
-            in : body
-            type: string
-            schema:
-              id: List_Name
-              required:
-                - list_name
-              properties:
-                list_name:
-                  type: string
-                  description: The new list name.
-                  default: "Back to School 2017"
-        responses:
-          200:
-            description: Success
-          204:
-            description: List content was not found.
-          406:
-            description: invalid name.
-        tags:
-          - List Functionalities
-      delete:
-        operationId: delete_list_one
-        parameters:
-          - name: x-access-token
-            in: header
-            type: string
-            required: true
-          - name: list_id
-            in: path
-            type: int
-            required: true
-        responses:
-          200:
-            description: Success
-          204:
-            description: List content was not found.
-        tags:
-          - List Functionalities
+  "/shoppinglist/{list_id}/":
+    get:
+      tags:
+        - Creating, Retreiving and manipulating lists
+      summary: Retrieve specific shoppinglist identified by list_id
+      parameters:
+        - name: list_id
+          in: query
+          type: integer
+          schema:
+            properties:
+              list_id:
+                type: integer
+                description: Identifier of shoppinglist to be retrieved
+                default: 20
+      responses:
+        200:
+          description: List found
+          schema:
+            properties:
+              title:
+                type: string
+                description: Title of shoppinglist
+                default: "Weekend party"
+              id:
+                type: integer
+                description: ID of shoppinglist
+                default: 20
+        404:
+          description: There is no shoppinglist that has the id provided
 
-  "/list/{list_id}/items":
-      get:
-        operationId: get_all_items
-        parameters:
-          - name: x-access-token
-            in: header
-            type: string
-            required: true
-          - name: list_id
-            in: path
-            type: int
-            required: true
-          - name: page
-            in: path
-            type: int
-          - name: limit
-            in: path
-            type: int
-        responses:
-          200:
-            description: Success
-          204:
-            description: List content was not found.
-          406:
-            description: invalid or missing data.
-        tags:
-          - Item Functionalities
-  "/list/{list_id}/":
-      post:
-        operationId: create_item
-        parameters:
-          - name: x-access-token
-            in: header
-            type: string
-            required: true
-          - name: list_id
-            in: path
-            type: int
-            required: true
-          - name: item_details
-            in: body
-            type: string
-            required: true
-            schema:
-              id: Item Details
-              required:
-                - item_name
-              properties:
-                item_name:
-                  type: string
-                  description: The new item name.
-                  default: "Note Book"
-                quantity:
-                  type: int
-                  description: Number of items
-                  default: 6
-        responses:
-          200:
-            description: Success
-          204:
-            description: List content was not found.
-          406:
-            description: invalid or missing data.
-        tags:
-          - Item Functionalities
+    put:
+      tags:
+        - Creating, Retreiving and manipulating lists
+      summary: Update an existing shoppinglist
+      parameters:
+        - name: list_id
+          in: query
+          type: integer
+          schema:
+            properties:
+              list_id:
+                type: integer
+                description: Identifier of shoppinglist to be updated
+                default: 20
+        - name: title
+          in: body
+          type: string
+          schema:
+            properties:
+              title:
+                type: string
+                description: New title of shoppinglist
+                default: "Weekend tour"
+      responses:
+        200:
+          description: List has been updated successfully
+          schema:
+            properties:
+              title:
+                type: string
+                description: Title of shoppinglist
+                default: "Weekend tour"
+              id:
+                type: integer
+                description: ID of shoppinglist
+                default: 20
+        400:
+          description: Title was not provided
+        409:
+          description: Shoppinglist with similar tityle already exists
+        404:
+          description: There is no shoppinglist that has the id provided
 
-  "/list/{list_id}/{item_id}":
-      get:
-        operationId: get_item
-        parameters:
-          - name: x-access-token
-            in: header
-            type: string
-            required: true
-          - name: list_id
-            in: path
-            type: int
-            required: true
-          - name: item_id
-            in: path
-            type: int
-            required: true
-        responses:
-          200:
-            description: Success
-          204:
-            description: List content was not found.
-          406:
-            description: invalid or missing data.
-        tags:
-          - Item Functionalities
-      put:
-        operationId: edit_item_name_quantity
-        parameters:
-          - name: x-access-token
-            in: header
-            type: string
-            required: true
-          - name: list_id
-            in: path
-            type: int
-            required: true
-          - name: item_id
-            in: path
-            type: int
-            required: true
-          - name:
-            in: body
-            type: string
-            required: true
-            schema:
-              id: item_update_details
-              properties:
-                item_name:
-                  type: string
-                  description: new_item_name
-                  default: Hard Cover Note Book
-                quantity:
-                  type: int
-                  description: new number of items
-                  default: 10
-        responses:
-          200:
-            description: Success
-          204:
-            description: List content was not found.
-          406:
-            description: invalid or missing data.
-        tags:
-          - Item Functionalities
-      delete:
-        operationId: delete_item
-        parameters:
-          - name: x-access-token
-            in: header
-            type: string
-            required: true
-          - name: list_id
-            in: path
-            type: int
-            required: true
-          - name: item_id
-            in: path
-            type: int
-            required: true
-        responses:
-          200:
-            description: Success
-          204:
-            description: List content was not found.
-          406:
-            description: invalid or missing data.
-        tags:
-          - Item Functionalities
+    delete:
+      tags:
+        - Creating, Retreiving and manipulating lists
+      summary: Delete an existing shoppinglist
+      parameters:
+        - name: list_id
+          in: query
+          type: integer
+          schema:
+            properties:
+              list_id:
+                type: integer
+                description: Identifier of shoppinglist to be updated
+                default: 20
+      responses:
+        200:
+          description: List has been deleted successfully
+          schema:
+            properties:
+              message:
+                type: string
+                description: List has been deleted
+                default: "Shoppinglist 20 has been deleted successfully"
+        404:
+          description: There is no shoppinglist that has the id provided
 
+  "/shoppinglist/{list_id}/items":
+    get:
+      tags:
+        - Creating, Retreiving and manipulating shoppinglist items
+      summary: Retrieve items in a specific shoppinglist identified by list_id
+      parameters:
+        - name: list_id
+          in: query
+          type: integer
+          schema:
+            properties:
+              list_id:
+                type: integer
+                description: Identifier of shoppinglist
+                default: 20
+      responses:
+        200:
+          description: Items retrieved successfully
+          schema:
+            properties:
+              items:
+                type: list
+                description: items in shoppinglist
+                default: [
+                    {"id": 20, "name": "sausages"},
+                    {"id": 70, "name": "nyama bites"}
+                  ]
+        404:
+          description: There is no shoppinglist that has the id provided
+    post:
+      tags:
+        - Creating, Retreiving and manipulating shoppinglist items
+      summary: Create an item in shoppinglist
+      parameters:
+        - name: list_id
+          in: query
+          type: integer
+          schema:
+            properties:
+              list_id:
+                type: integer
+                description: Shoppinglist ID
+                default: 20
+        - name: name
+          in: body
+          type: string
+          schema:
+            properties:
+              name:
+                type: string
+                description: Name of item to be created
+                default: "Barbecue rack"
+      responses:
+        201:
+          description: Items has been created successfully
+          schema:
+            properties:
+              name:
+                type: string
+                description: Item that has been created
+                default: "Barbecue rack"
+              id:
+                type: integer
+                description: ID of item that has  been created
+                default: 50
+        404:
+          description: There is no shoppinglist that has the id provided
+        409:
+          description: There already exists an item with a similar name
+
+  "/shoppinglist/{list_id}/items/{item_id}":
+    get:
+      tags:
+        - Creating, Retreiving and manipulating shoppinglist items
+      summary: Retrieve a specific item in a specific shoppinglist
+      parameters:
+        - name: list_id
+          in: query
+          type: integer
+          schema:
+            properties:
+              list_id:
+                type: integer
+                description: Identifier of shoppinglist
+                default: 20
+        - name: item_id
+          in: query
+          type: integer
+          schema:
+            properties:
+              list_id:
+                type: integer
+                description: Identifier of item
+                default: 50
+      responses:
+        200:
+          description: Items retrieved successfully
+          schema:
+            properties:
+              items:
+                type: list
+                description: item in shoppinglist
+                default: [
+                    {"id": 50, "name": "nyama bites"}
+                  ]
+        404:
+          description: There is no item that has the id provided
+    put:
+      tags:
+        - Creating, Retreiving and manipulating shoppinglist items
+      summary: Update an item
+      parameters:
+        - name: list_id
+          in: query
+          type: integer
+          schema:
+            properties:
+              list_id:
+                type: integer
+                description: Shoppinglist ID
+                default: 20
+        - name: item_id
+          in: query
+          type: integer
+          schema:
+            properties:
+              list_id:
+                type: integer
+                description: item ID
+                default: 50
+        - name: name
+          in: body
+          type: string
+          schema:
+            properties:
+              name:
+                type: string
+                description: New name of item
+                default: "Sausage packs"
+      responses:
+        200:
+          description: Items has been updated successfully
+          schema:
+            properties:
+              name:
+                type: string
+                description: New name of item
+                default: "Sausage packs"
+              id:
+                type: integer
+                description: ID of item that has  been updated
+                default: 50
+        404:
+          description: There is no item that has the id provided
+        409:
+          description: There already exists an item with a similar name
+
+    delete:
+      tags:
+        - Creating, Retreiving and manipulating shoppinglist items
+      summary: Delete an item
+      parameters:
+        - name: list_id
+          in: query
+          type: integer
+          schema:
+            properties:
+              list_id:
+                type: integer
+                description: Shoppinglist ID
+                default: 20
+        - name: item_id
+          in: query
+          type: integer
+          schema:
+            properties:
+              list_id:
+                type: integer
+                description: item ID
+                default: 50
+      responses:
+        200:
+          description: Items has been deleted successfully
+          schema:
+            properties:
+              message:
+                type: string
+                description: Message returned from server
+                default: "Item 50 has been deleted successfully"
+                default: 50
+        404:
+          description: There is no item that has the id provided
 
 securityDefinitions:
   basicAuth:
