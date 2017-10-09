@@ -37,7 +37,15 @@ def create_app(config_mode):
 
     @flask_api.route('/user/register/', methods=['POST'])
     def create_user():
+        """Creates a user account
 
+            :arg:
+                pword (string): Users password
+                username (string): user's unique name
+
+            :return
+                response (json):
+        """
         # Create a user account with the credentials provided
         pword = str(request.data.get('password', ''))
         username = str(request.data.get('username', '')).lower().strip()
@@ -48,7 +56,7 @@ def create_app(config_mode):
             }
             return make_response(data, status_code=400)
 
-        if len(pword) < 7:
+        if len(pword) < 6:
             data = {
                 "error_msg": "password must be at-least 6 characters long"
             }
@@ -98,7 +106,17 @@ def create_app(config_mode):
 
     @auth.verify_password
     def verify_password(username, pword):
+        """Check if credentials or token provided is authentic
 
+                :arg:
+                    username (string): User's unique name or
+                        authentication token
+                    pword (string): User's password
+
+                :return
+                    (boolen): True if user has been authorised, otherwise
+                    returns False
+            """
         # Attempt to authenticate using token
         user = verify_auth_token(username)
 
@@ -263,14 +281,13 @@ def create_app(config_mode):
             if error_message:
                 return error_message
 
-            else:
-                item = ShoppingListItems(name=name, shoppinglist_id=list_id)
-                item.save()
-                data = {
-                    'id': item.id,
-                    'name': item.name
-                }
-                return make_response(data, status_code=201)
+            item = ShoppingListItems(name=name, shoppinglist_id=list_id)
+            item.save()
+            data = {
+                'id': item.id,
+                'name': item.name
+            }
+            return make_response(data, status_code=201)
 
         else:
             items = None
@@ -307,8 +324,7 @@ def create_app(config_mode):
                     # if no items contains keyword
                     if len(items) < 1:
                         data = {'error_msg': "No item matches the keyword "
-                                             "`{}`.".format(keyword)
-                                }
+                                             "`{}`.".format(keyword)}
                         return make_response(data, status_code=404)
 
             if not items:
@@ -363,8 +379,7 @@ def create_app(config_mode):
         if request.method == 'DELETE':
             item.delete()
             data = {"message": "item {} has been deleted "
-                               "successfully".format(item_id)
-                    }
+                               "successfully".format(item_id)}
             return make_response(data=data, status_code=200)
 
         # retrieve the list with the id provided
@@ -495,10 +510,10 @@ def verify_auth_token(token):
         :return
             (boolean): True if token is valid otherwise returns False
     """
-    s = Serializer(secret_key)
+    serializer = Serializer(secret_key)
 
     try:
-        data = s.loads(token)
+        data = serializer.loads(token)
     except SignatureExpired:
         return None  # valid token, but expired
     except BadSignature:
