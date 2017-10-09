@@ -35,6 +35,13 @@ def create_app(config_mode):
         }
         return make_response(data, status_code=200)
 
+    @flask_api.errorhandler(404)
+    def route_not_found(e):
+        data = {
+            "error_msg": "Route does not exist."
+        }
+        return make_response(data, status_code=405)
+
     @flask_api.route('/user/register/', methods=['POST'])
     def create_user():
         """Creates a user account
