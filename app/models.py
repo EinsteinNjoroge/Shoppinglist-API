@@ -1,5 +1,7 @@
 import os
 import random
+import datetime
+import time
 from flask_sqlalchemy import SQLAlchemy
 
 
@@ -52,6 +54,8 @@ class Shoppinglists(db.Model):
     __tablename__ = 'shoppinglists'
     id = db.Column('id', db.Integer, primary_key=True)
     title = db.Column('title', db.String(100), nullable=False)
+    created_on = db.Column('created_on', db.String(20), nullable=False)
+    modified_on = db.Column('modified_on', db.String(20), nullable=False)
     user_id = db.Column(
         'user_id', db.Integer,
         db.ForeignKey(
@@ -72,6 +76,14 @@ class Shoppinglists(db.Model):
         self.id = generate_random_id()
         self.user_id = user_id
 
+        # get current timestamp
+        epoch_time = time.time()
+        timestamp = datetime.datetime.fromtimestamp(epoch_time).strftime(
+            '%Y-%m-%d %H:%M:%S')
+
+        self.created_on = timestamp
+        self.modified_on = "--"
+
     @staticmethod
     def get_all():
         return Shoppinglists.query.all()
@@ -90,6 +102,8 @@ class ShoppingListItems(db.Model):
     __tablename__ = 'shoppinglist_items'
     id = db.Column('id', db.Integer, primary_key=True)
     name = db.Column('name', db.String(100), nullable=False)
+    price = db.Column('price', db.Integer, nullable=False)
+    quantity = db.Column('quantity', db.Integer, nullable=False)
     shoppinglist_id = db.Column(
         db.Integer, db.ForeignKey(
             'shoppinglists.id',
@@ -99,11 +113,13 @@ class ShoppingListItems(db.Model):
         nullable=False
     )
 
-    def __init__(self, name, shoppinglist_id):
+    def __init__(self, name, shoppinglist_id, price, quantity=1):
         """Initialize with a title"""
         self.name = name
         self.id = generate_random_id()
         self.shoppinglist_id = shoppinglist_id
+        self.price = price
+        self.quantity = quantity
 
     @staticmethod
     def get_all():

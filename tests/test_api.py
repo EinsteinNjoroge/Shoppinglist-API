@@ -19,21 +19,29 @@ class TestModels(TestCase):
         """check if model User has the required class variables"""""
         self.assertTrue('id' in [attr for attr in dir(self.user)])
         self.assertTrue('username' in [attr for attr in dir(self.user)])
-        self.assertTrue('password_hash' in [attr for attr in dir(self.user)])
         self.assertTrue('firstname' in [attr for attr in dir(self.user)])
         self.assertTrue('lastname' in [attr for attr in dir(self.user)])
+        self.assertTrue('password_hash' in [attr for attr in dir(self.user)])
 
     def test_shoppinglist_variables(self):
         """check if model ShoppingList has the required class variables"""
         self.assertTrue('id' in [attr for attr in dir(self.shoppinglist)])
         self.assertTrue('title' in [attr for attr in dir(self.shoppinglist)])
         self.assertTrue('user_id' in [attr for attr in dir(self.shoppinglist)])
+        self.assertTrue('created_on' in [attr for attr in dir(
+            self.shoppinglist)])
+        self.assertTrue('modified_on' in [attr for attr in dir(
+            self.shoppinglist)])
 
     def test_shoppinglist_items_variables(self):
         """check if model ShoppingListItems has the required class variables"""
         self.assertTrue('id' in
                         [attr for attr in dir(self.shoppinglist_items)])
         self.assertTrue('name' in
+                        [attr for attr in dir(self.shoppinglist_items)])
+        self.assertTrue('price' in
+                        [attr for attr in dir(self.shoppinglist_items)])
+        self.assertTrue('quantity' in
                         [attr for attr in dir(self.shoppinglist_items)])
         self.assertTrue('shoppinglist_id' in
                         [attr for attr in dir(self.shoppinglist_items)])
@@ -99,6 +107,33 @@ class TestAPI(TestCase):
         self.assertEqual(create_user_resource.status_code, 201)
         self.assertIn('test_user', str(create_user_resource.data))
         self.assertIn('id', str(create_user_resource.data))
+
+    def test_api_reset_password_with_blank_new_password(self):
+        headers = self.get_authorization_header()
+        user_data = {'password': ''}
+        reset_password_resource = self.client().put(
+            '/user/reset_password/', data=user_data, headers=headers
+        )
+
+        self.assertEqual(reset_password_resource.status_code, 400)
+        self.assertIn('provide a valid password',
+                      str(reset_password_resource.data))
+
+    def test_api_reset_password(self):
+        headers = self.get_authorization_header()
+        user_data = {'password': 'new_password'}
+        reset_password_resource = self.client().put(
+            '/user/reset_password/', data=user_data, headers=headers
+        )
+
+        self.assertEqual(reset_password_resource.status_code, 200)
+        self.assertIn('successfully', str(reset_password_resource.data))
+
+    def test_api_logout(self):
+        user_logout = self.client().get('/user/logout/')
+
+        self.assertEqual(user_logout.status_code, 200)
+        self.assertIn('User logged out', str(user_logout.data))
 
     def test_api_reset_password(self):
         headers = self.get_authorization_header()
@@ -330,7 +365,7 @@ class TestAPI(TestCase):
         # test API can create shoppinglist item
         create_item_resource = self.client().post(
             '/shoppinglist/{}/items/'.format(shoppinglist_id),
-            data={'name': 'touring shoes'},
+            data={'name': 'touring shoes', 'price': 10},
             headers=headers
         )
         self.assertEqual(create_item_resource.status_code, 201)
@@ -408,11 +443,30 @@ class TestAPI(TestCase):
         # create item with blank name
         create_item_resource = self.client().post(
             '/shoppinglist/{}/items/'.format(shoppinglist_id),
-            data=None,
+            data={'price': '10'},
             headers=headers
         )
         self.assertEqual(create_item_resource.status_code, 400)
         self.assertIn('name must be provided', str(create_item_resource.data))
+
+        # create item with no price
+        create_item_resource = self.client().post(
+            '/shoppinglist/{}/items/'.format(shoppinglist_id),
+            data={'name': 'item one'},
+            headers=headers
+        )
+        self.assertEqual(create_item_resource.status_code, 400)
+        self.assertIn('provide a valid item price',
+                      str(create_item_resource.data))
+
+        # Fetch items from list that doesn't exist
+        create_item_resource = self.client().get(
+            '/shoppinglist/{}/items/'.format(100000000000000000),
+            headers=headers
+        )
+        self.assertEqual(create_item_resource.status_code, 404)
+        self.assertIn('Requested shoppinglist was not found',
+                      str(create_item_resource.data))
 
     def test_search_items(self):
         headers = self.get_authorization_header()
@@ -444,7 +498,7 @@ class TestAPI(TestCase):
         # create an item
         self.client().post(
             '/shoppinglist/{}/items/'.format(shoppinglist_id),
-            data={'name': 'touring shorts'},
+            data={'name': 'touring shorts', 'price': '10'},
             headers=headers
         )
 

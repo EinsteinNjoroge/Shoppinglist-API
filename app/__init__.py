@@ -318,13 +318,28 @@ def create_app(config_mode):
         if request.method == 'POST':
             # Create shoppinglist item with the name provided
             name = str(request.data.get('name', '')).lower().strip()
+            price = str(request.data.get('price', ''))
+            quantity = str(request.data.get('quantity', '1'))
 
             error_message = validate_item_name(name, list_id)
+
+            if not price.isdigit():
+                data = {
+                   'error_msg': "Please provide a valid item price"
+                }
+                return make_response(data, status_code=400)
+
+            if not quantity.isdigit():
+                data = {
+                    'error_msg': "Please provide a valid quantity"
+                }
+                return make_response(data, status_code=400)
 
             if error_message:
                 return error_message
 
-            item = ShoppingListItems(name=name, shoppinglist_id=list_id)
+            item = ShoppingListItems(name=name, shoppinglist_id=list_id,
+                                     price=price, quantity=quantity)
             item.save()
             data = {
                 'id': item.id,
