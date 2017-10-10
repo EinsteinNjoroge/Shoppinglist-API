@@ -1,5 +1,9 @@
 import hashlib
 import os
+
+import time
+
+import datetime
 from flask import request
 from flask import jsonify
 from flask_api import FlaskAPI
@@ -253,7 +257,9 @@ def create_app(config_mode):
         for shopping_list in shopping_lists:
             list_details = {
                 'id': shopping_list.id,
-                'title': shopping_list.title
+                'title': shopping_list.title,
+                'created_on': shopping_list.created_on,
+                'modified_on': shopping_list.modified_on
             }
             data.append(list_details)
         return make_response(data, status_code=200)
@@ -280,11 +286,19 @@ def create_app(config_mode):
             if error_message:
                 return error_message
 
+            # get current timestamp
+            epoch_time = time.time()
+            timestamp = datetime.datetime.fromtimestamp(epoch_time).strftime(
+                '%Y-%m-%d %H:%M:%S')
+
             shopping_list.title = title
+            shopping_list.modified_on = timestamp
             shopping_list.save()
+
             data = {
                 'id': shopping_list.id,
-                'title': shopping_list.title
+                'title': shopping_list.title,
+                'modified_on': shopping_list.modified_on
             }
             return make_response(data, 200)
 
@@ -299,7 +313,9 @@ def create_app(config_mode):
         # retrieve the list with the id provided
         list_details = {
             'id': shopping_list.id,
-            'title': shopping_list.title
+            'title': shopping_list.title,
+            'modified_on': shopping_list.modified_on,
+            'created_on': shopping_list.created_on
         }
         return make_response(list_details, status_code=200)
 
@@ -323,17 +339,9 @@ def create_app(config_mode):
 
             error_message = validate_item_name(name, list_id)
 
-            if not price.isdigit():
-                data = {
-                   'error_msg': "Please provide a valid item price"
-                }
-                return make_response(data, status_code=400)
-
-            if not quantity.isdigit():
-                data = {
-                    'error_msg': "Please provide a valid quantity"
-                }
-                return make_response(data, status_code=400)
+            if not error_message:
+                error_message = validate_item_price_and_quantity(
+                    price, quantity)
 
             if error_message:
                 return error_message
@@ -343,67 +351,72 @@ def create_app(config_mode):
             item.save()
             data = {
                 'id': item.id,
-                'name': item.name
+                'name': item.name,
+                'price': item.price,
+                'quantity': item.quantity
             }
             return make_response(data, status_code=201)
 
-        else:
-            items = None
-            limit = None
+        # METHOD GET
 
-            # check if a search keyword has been provided
-            args = request.args
-            if args:
+        items = None
+        limit = None
 
-                if 'limit' in args:
-                    # limit number of results returned
-                    limit = int(args['limit'])
+        # check if a search keyword has been provided
+        args = request.args
+        if args:
 
-                if 'q' in args:
-                    # search for item that contain keyword provided
-                    keyword = str(args['q']).lower()
+            if 'limit' in args:
+                # limit number of results returned
+                limit = int(args['limit'])
 
-                    if limit:
-                        # limit number of results returned
-                        items = ShoppingListItems.query.filter(
-                            ShoppingListItems.name.like(
-                                "%{}%".format(keyword)),
-                            ShoppingListItems.shoppinglist_id == list_id
-                        ).limit(limit).all()
-
-                    else:
-                        # get all results that match keyword
-                        items = ShoppingListItems.query.filter(
-                            ShoppingListItems.name.like(
-                                "%{}%".format(keyword)
-                            ), ShoppingListItems.shoppinglist_id == list_id
-                        ).all()
-
-                    # if no items contains keyword
-                    if len(items) < 1:
-                        data = {'error_msg': "No item matches the keyword "
-                                             "`{}`.".format(keyword)}
-                        return make_response(data, status_code=404)
-
-            if not items:
+            if 'q' in args:
+                # search for item that contain keyword provided
+                keyword = str(args['q']).lower()
 
                 if limit:
-                    # limit number or results to be returned
-                    items = ShoppingListItems.query.filter_by(
-                        shoppinglist_id=list_id).limit(limit).all()
-                else:
-                    #  return all results
-                    items = ShoppingListItems.query.filter_by(
-                        shoppinglist_id=list_id)
+                    # limit number of results returned
+                    items = ShoppingListItems.query.filter(
+                        ShoppingListItems.name.like(
+                            "%{}%".format(keyword)),
+                        ShoppingListItems.shoppinglist_id == list_id
+                    ).limit(limit).all()
 
-            data = []
-            for item in items:
-                list_details = {
-                    'id': item.id,
-                    'name': item.name
-                }
-                data.append(list_details)
-            return make_response(data, status_code=200)
+                else:
+                    # get all results that match keyword
+                    items = ShoppingListItems.query.filter(
+                        ShoppingListItems.name.like(
+                            "%{}%".format(keyword)
+                        ), ShoppingListItems.shoppinglist_id == list_id
+                    ).all()
+
+                # if no items contains keyword
+                if len(items) < 1:
+                    data = {'error_msg': "No item matches the keyword "
+                                         "`{}`.".format(keyword)}
+                    return make_response(data, status_code=404)
+
+        if not items:
+
+            if limit:
+                # limit number or results to be returned
+                items = ShoppingListItems.query.filter_by(
+                    shoppinglist_id=list_id).limit(limit).all()
+            else:
+                #  return all results
+                items = ShoppingListItems.query.filter_by(
+                    shoppinglist_id=list_id)
+
+        data = []
+        for item in items:
+            list_details = {
+                'id': item.id,
+                'name': item.name,
+                'price': item.price,
+                'quantity': item.quantity
+            }
+            data.append(list_details)
+        return make_response(data, status_code=200)
 
     @flask_api.route('/items/<int:item_id>',
                      methods=['PUT', 'GET', 'DELETE'])
@@ -429,13 +442,22 @@ def create_app(config_mode):
 
         if request.method == 'PUT':
             name = str(request.data.get('name', '')).lower().strip()
+            price = str(request.data.get('price', ''))
+            quantity = str(request.data.get('quantity', ''))
 
             # check if item name is valid
             error_message = validate_item_name(name, shoppinglist_id)
+
+            if not error_message:
+                error_message = validate_item_price_and_quantity(
+                    price, quantity)
+
             if error_message:
                 return error_message
 
             item.name = name
+            item.price = price
+            item.quantity = quantity
             item.save()
 
             data = {'id': item.id, 'name': item.name}
@@ -450,7 +472,9 @@ def create_app(config_mode):
         # retrieve the list with the id provided
         data = {
             'id': item.id,
-            'name': item.name
+            'name': item.name,
+            'price': item.price,
+            'quantity': item.quantity
         }
         return make_response(data, status_code=200)
 
@@ -527,6 +551,31 @@ def validate_item_name(name, list_id):
             'error_msg': "Item `{}` already exists".format(name)
         }
         return make_response(data, status_code=409)
+
+
+def validate_item_price_and_quantity(price, quantity):
+    """Validates that a name has the at-least one character and that no
+    other item - belonging to the current user - has a similar name
+
+        :arg:
+            name (string): The name of item to be created
+            list_id (int): ID of the shoppinglist where item will be created
+
+        :return
+            response (json): Error message generated if any, otherwise
+            returns None
+    """
+    if not price.isdigit():
+        data = {
+            'error_msg': "Please provide a valid item price"
+        }
+        return make_response(data, status_code=400)
+
+    if not quantity.isdigit():
+        data = {
+            'error_msg': "Please provide a valid quantity"
+        }
+        return make_response(data, status_code=400)
 
 
 def sha1_hash(value):

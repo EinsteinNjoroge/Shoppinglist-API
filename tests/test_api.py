@@ -1,4 +1,8 @@
 from base64 import b64encode
+
+import time
+
+import datetime
 from flask import json
 from unittest import TestCase
 from app import create_app
@@ -135,20 +139,6 @@ class TestAPI(TestCase):
         self.assertEqual(user_logout.status_code, 200)
         self.assertIn('User logged out', str(user_logout.data))
 
-    def test_api_reset_password(self):
-        headers = self.get_authorization_header()
-
-        # reset user password
-        reset_password_resource = self.client().put(
-            '/user/reset_password/',
-            data={'password': 'new_password'},
-            headers=headers
-        )
-
-        self.assertEqual(reset_password_resource.status_code, 200)
-        self.assertIn('Password has been changed successfully',
-                      str(reset_password_resource.data))
-
     def test_api_create_duplicate_username(self):
         # create a user
         user_data1 = {'username': 'user100', 'password': 'test_password'}
@@ -227,6 +217,8 @@ class TestAPI(TestCase):
         )
         self.assertEqual(get_shoppinglist_resource.status_code, 200)
         self.assertIn('back to school', str(get_shoppinglist_resource.data))
+        self.assertIn('created_on', str(get_shoppinglist_resource.data))
+        self.assertIn('modified_on', str(get_shoppinglist_resource.data))
 
         # test API can update shoppinglist
         response = self.client().put(
@@ -242,6 +234,11 @@ class TestAPI(TestCase):
             headers=headers
         )
         self.assertIn('weekend party', str(shoppinglist.data))
+        # get current timestamp
+        epoch_time = time.time()
+        timestamp = datetime.datetime.fromtimestamp(epoch_time).strftime(
+            '%Y-%m-%d %H:%M')
+        self.assertIn(timestamp, str(shoppinglist.data))
 
         # test API can delete shoppinglist
         # delete shoppinglist
@@ -385,11 +382,17 @@ class TestAPI(TestCase):
         )
         self.assertEqual(get_item_resource.status_code, 200)
         self.assertIn('touring shoes', str(get_item_resource.data))
+        self.assertIn('price', str(get_item_resource.data))
+        self.assertIn('quantity', str(get_item_resource.data))
 
         # test API can update shoppinglist item
         update_item_resource = self.client().put(
             '/items/{}'.format(item_id),
-            data={'name': 'Swimming floaters'},
+            data={
+                'name': 'Swimming floaters',
+                'price': '100',
+                'quantity': '1'
+            },
             headers=headers
         )
         self.assertEqual(update_item_resource.status_code, 200)
