@@ -1,8 +1,6 @@
 import hashlib
 import os
-
 import time
-
 import datetime
 from flask import request
 from flask import jsonify
@@ -68,10 +66,21 @@ def create_app(config_mode):
         # Create a user account with the credentials provided
         pword = str(request.data.get('password', ''))
         username = str(request.data.get('username', '')).lower().strip()
+        answer = str(request.data.get('answer', '')).lower().strip()
+        security_question = str(request.data.get('security_question', '')).lower(
+
+        ).strip()
 
         if not username or not pword:
             data = {
                 "error_msg": "Please provide a valid username and password"
+            }
+            return make_response(data, status_code=400)
+
+        if not answer or not security_question:
+            data = {
+                "error_msg": "Please provide a valid security question and "
+                             "answer"
             }
             return make_response(data, status_code=400)
 
@@ -91,7 +100,8 @@ def create_app(config_mode):
 
         # Create a user
         password_hash = sha1_hash(pword)
-        new_user = User(username=username, password_hash=password_hash)
+        new_user = User(username=username, password_hash=password_hash,
+                        answer=answer, security_question=security_question)
         new_user.save()
 
         data = {
@@ -161,9 +171,9 @@ def create_app(config_mode):
         }
         return make_response(data, 200)
 
-    @flask_api.route('/user/reset_password/', methods=['PUT'])
+    @flask_api.route('/user/change_password/', methods=['PUT'])
     @auth.login_required
-    def reset_password():
+    def change_password():
 
         pword = str(request.data.get('password', ''))
 

@@ -8,7 +8,6 @@ from flask_sqlalchemy import SQLAlchemy
 db = SQLAlchemy()  # initialize sql-alchemy
 secret_key = os.urandom(24)  # create a random secret key
 
-
 def generate_random_id():
     """generates a random integer value between 1 and 100000000
         :return
@@ -26,19 +25,24 @@ class User(db.Model):
     firstname = db.Column('firstname', db.String(10), nullable=False)
     lastname = db.Column('lastname', db.String(10), nullable=False)
     password_hash = db.Column('password_hash', db.String(100), nullable=False)
+    security_question = db.Column('security_question', db.String(100))
+    answer = db.Column('answer', db.String(100))
 
     # create virtual column (back-reference)
     # for maintaining table relationship and data integrity
     users = db.relationship(
         "Shoppinglists", backref="users", lazy="dynamic")
 
-    def __init__(self, username, password_hash, firstname='', lastname=''):
+    def __init__(self, username, password_hash, answer, security_question,
+                 firstname='', lastname=''):
         """Initialize the user """
         self.id = generate_random_id()
         self.username = username
         self.firstname = firstname
         self.lastname = lastname
         self.password_hash = password_hash
+        self.answer = answer
+        self.security_question = security_question
 
     def save(self):
         db.session.add(self)

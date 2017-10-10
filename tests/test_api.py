@@ -1,7 +1,5 @@
 from base64 import b64encode
-
 import time
-
 import datetime
 from flask import json
 from unittest import TestCase
@@ -26,6 +24,8 @@ class TestModels(TestCase):
         self.assertTrue('firstname' in [attr for attr in dir(self.user)])
         self.assertTrue('lastname' in [attr for attr in dir(self.user)])
         self.assertTrue('password_hash' in [attr for attr in dir(self.user)])
+        self.assertTrue('security_question' in [attr for attr in dir(self.user)])
+        self.assertTrue('answer' in [attr for attr in dir(self.user)])
 
     def test_shoppinglist_variables(self):
         """check if model ShoppingList has the required class variables"""
@@ -73,7 +73,10 @@ class TestAPI(TestCase):
         # create a user and login to account created
         username = 'user20nm'
         pword = 'test_password'
-        test_user = {'username': username, 'password': pword}
+        security_question = "Am I myself?"
+        answer = 'yes'
+        test_user = {'username': username, 'password': pword,
+                     'answer': answer, 'security_question': security_question}
         self.client().post('/user/register/', data=test_user)
 
         header = {
@@ -84,7 +87,12 @@ class TestAPI(TestCase):
         return header
 
     def test_api_user_password_complexity(self):
-        user_data = {'username': 'test_user200', 'password': '123'}
+        user_data = {
+            'username': 'test_user200',
+            'password': '123',
+            'security_question': 'AM i?',
+            'answer': 'answer'
+        }
         create_user_resource = self.client().post(
             '/user/register/', data=user_data
         )
@@ -103,7 +111,12 @@ class TestAPI(TestCase):
                       str(create_user_resource.data))
 
     def test_api_create_user(self):
-        user_data = {'username': 'test_user2', 'password': 'test_password'}
+        user_data = {
+            'username': 'test_user2',
+            'password': 'test_password',
+            'security_question': 'AM i?',
+            'answer': 'answer'
+        }
         create_user_resource = self.client().post(
             '/user/register/', data=user_data
         )
@@ -112,26 +125,26 @@ class TestAPI(TestCase):
         self.assertIn('test_user', str(create_user_resource.data))
         self.assertIn('id', str(create_user_resource.data))
 
-    def test_api_reset_password_with_blank_new_password(self):
+    def test_api_change_password_with_blank_new_password(self):
         headers = self.get_authorization_header()
         user_data = {'password': ''}
-        reset_password_resource = self.client().put(
-            '/user/reset_password/', data=user_data, headers=headers
+        change_password_resource = self.client().put(
+            '/user/change_password/', data=user_data, headers=headers
         )
 
-        self.assertEqual(reset_password_resource.status_code, 400)
+        self.assertEqual(change_password_resource.status_code, 400)
         self.assertIn('provide a valid password',
-                      str(reset_password_resource.data))
+                      str(change_password_resource.data))
 
-    def test_api_reset_password(self):
+    def test_api_change_password(self):
         headers = self.get_authorization_header()
         user_data = {'password': 'new_password'}
-        reset_password_resource = self.client().put(
-            '/user/reset_password/', data=user_data, headers=headers
+        change_password_resource = self.client().put(
+            '/user/change_password/', data=user_data, headers=headers
         )
 
-        self.assertEqual(reset_password_resource.status_code, 200)
-        self.assertIn('successfully', str(reset_password_resource.data))
+        self.assertEqual(change_password_resource.status_code, 200)
+        self.assertIn('successfully', str(change_password_resource.data))
 
     def test_api_logout(self):
         user_logout = self.client().get('/user/logout/')
@@ -141,13 +154,17 @@ class TestAPI(TestCase):
 
     def test_api_create_duplicate_username(self):
         # create a user
-        user_data1 = {'username': 'user100', 'password': 'test_password'}
+        user_data1 = {
+            'username': 'user100',
+            'password': 'test_password',
+            'security_question': 'AM i?',
+            'answer': 'answer'
+        }
         self.client().post('/user/register/', data=user_data1)
 
         # create another user with similar credentials
-        user_data2 = {'username': 'user100', 'password': 'test_password'}
         create_user_resource = self.client().post(
-            '/user/register/', data=user_data2
+            '/user/register/', data=user_data1
         )
 
         self.assertEqual(create_user_resource.status_code, 409)
@@ -164,7 +181,12 @@ class TestAPI(TestCase):
                       str(create_user_resource.data))
 
     def test_api_authenticate_user(self):
-        user_data = {'username': 'test_user10', 'password': 'test_password'}
+        user_data = {
+            'username': 'test_user10',
+            'password': 'test_password',
+            'security_question': 'AM i?',
+            'answer': 'answer'
+        }
 
         # create a user
         self.client().post('/user/register/', data=user_data)
