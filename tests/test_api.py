@@ -146,6 +146,95 @@ class TestAPI(TestCase):
         self.assertEqual(change_password_resource.status_code, 200)
         self.assertIn('successfully', str(change_password_resource.data))
 
+    def test_api_reset_password(self):
+        # Reset password without username
+        reset_password_resource = self.client().get(
+            '/user/reset_password/'
+        )
+
+        self.assertEqual(reset_password_resource.status_code, 400)
+        self.assertIn('user is not specified in path',
+                      str(reset_password_resource.data))
+
+        # reset password for unregistered user
+        reset_password_resource = self.client().get(
+            '/user/reset_password/?user=ashgcvajac'
+        )
+
+        self.assertEqual(reset_password_resource.status_code, 404)
+        self.assertIn('no registered user', str(reset_password_resource.data))
+
+        # reset password for registered user
+        self.get_authorization_header()
+        reset_password_resource = self.client().get(
+            '/user/reset_password/?user=user20nm'
+        )
+
+        self.assertEqual(reset_password_resource.status_code, 200)
+        self.assertIn('myself?', str(reset_password_resource.data))
+
+        # reset password with wrong answer
+        user_data = {
+            'password': 'test_password3',
+            'answer': 'wrong_answer'
+        }
+
+        change_password_resource = self.client().post(
+            '/user/reset_password/?user=user20nm', data=user_data
+        )
+        self.assertEqual(change_password_resource.status_code, 400)
+        self.assertIn('answer is incorrect',
+                      str(change_password_resource.data))
+
+        # reset password with no password
+        user_data = {
+            'answer': 'wrong_answer'
+        }
+
+        change_password_resource = self.client().post(
+            '/user/reset_password/?user=user20nm', data=user_data
+        )
+        self.assertEqual(change_password_resource.status_code, 400)
+        self.assertIn('Please provide a valid password',
+                      str(change_password_resource.data))
+
+        # reset password with no password
+        user_data = {
+            'password': 'test_pword3'
+        }
+
+        change_password_resource = self.client().post(
+            '/user/reset_password/?user=user20nm', data=user_data
+        )
+        self.assertEqual(change_password_resource.status_code, 400)
+        self.assertIn('provide a valid answer',
+                      str(change_password_resource.data))
+
+        # reset password with no password
+        user_data = {
+            'password': 'wrong_answer'
+        }
+
+        change_password_resource = self.client().post(
+            '/user/reset_password/?user=user20nm', data=user_data
+        )
+        self.assertEqual(change_password_resource.status_code, 400)
+        self.assertIn('provide a valid answer',
+                      str(change_password_resource.data))
+
+        # reset password with correct credentials
+        user_data = {
+            'password': 'est_password454',
+            'answer': 'yes'
+        }
+
+        change_password_resource = self.client().post(
+            '/user/reset_password/?user=user20nm', data=user_data
+        )
+        self.assertEqual(change_password_resource.status_code, 200)
+        self.assertIn('successfully',
+                      str(change_password_resource.data))
+
     def test_api_logout(self):
         user_logout = self.client().get('/user/logout/')
 
@@ -198,6 +287,19 @@ class TestAPI(TestCase):
 
         self.assertEqual(authenticate_user_resource.status_code, 200)
         self.assertIn('token', str(authenticate_user_resource.data))
+
+        user_data2 = {
+            'username': 'trcyujkhbguvy5h',
+            'password': 'test_password'
+        }
+
+        # Login to account created
+        authenticate_user_resource = self.client().post(
+            '/user/login/', data=user_data2
+        )
+
+        self.assertEqual(authenticate_user_resource.status_code, 401)
+        self.assertIn('Wrong', str(authenticate_user_resource.data))
 
     def test_create_shoppinglists_with_blank_title(self):
         # create a shoppinglists

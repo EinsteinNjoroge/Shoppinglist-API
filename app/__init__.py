@@ -236,7 +236,8 @@ def create_app(config_mode):
             }
             return make_response(data, status_code=400)
 
-        if user.answer.lower() != answer.lower():
+        stored_answer = str(user.answer)
+        if stored_answer.lower() != answer.lower():
             data = {
                 "error_msg": "Your security question answer is incorrect."
             }
