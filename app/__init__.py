@@ -67,9 +67,8 @@ def create_app(config_mode):
         pword = str(request.data.get('password', ''))
         username = str(request.data.get('username', '')).lower().strip()
         answer = str(request.data.get('answer', '')).lower().strip()
-        security_question = str(request.data.get('security_question', '')).lower(
-
-        ).strip()
+        security_question = str(request.data.get('security_question',
+                                                 '')).lower().strip()
 
         if not username or not pword:
             data = {
@@ -187,6 +186,66 @@ def create_app(config_mode):
         user_logged_in.save()
         data = {
             'message': "Password has been changed successfully"
+        }
+        return make_response(data, 200)
+
+    @flask_api.route('/user/reset_password/', methods=['GET', 'POST'])
+    def reset_password():
+
+        args = request.args
+        if not args or 'user' not in args:
+            data = {
+                "error_msg": "user is not specified in path"
+            }
+            return make_response(data, status_code=400)
+
+        username = str(args['user'])
+        user = User.query.filter_by(username=username).first()
+
+        # Get security question
+        if request.method == 'GET':
+
+            if not user:
+                data = {
+                    "error_msg": "There is no registered user with the "
+                                 "username `{}`".format(username)
+                }
+                return make_response(data, status_code=404)
+
+            data = {
+                "security_question": user.security_question
+            }
+            return make_response(data, status_code=200)
+
+        # METHOD POST
+        # reset password
+        pword = str(request.data.get('password', ''))
+        answer = str(request.data.get('answer', ''))
+
+        if not pword or len(pword) < 6:
+            data = {
+                "error_msg": "Please provide a valid password (At-least 6 "
+                             "characters)"
+            }
+            return make_response(data, status_code=400)
+
+        if not answer:
+            data = {
+                "error_msg": "Please provide a valid answer for the"
+                             " security question"
+            }
+            return make_response(data, status_code=400)
+
+        if user.answer.lower() != answer.lower():
+            data = {
+                "error_msg": "Your security question answer is incorrect."
+            }
+            return make_response(data, status_code=400)
+
+        user.password_hash = sha1_hash(pword)
+        user.save()
+        data = {
+            'message': "Password has been reset successfully"
         }
         return make_response(data, 200)
 
