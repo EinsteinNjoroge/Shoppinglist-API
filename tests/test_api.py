@@ -1,4 +1,6 @@
 from base64 import b64encode
+import time
+import datetime
 from flask import json
 from unittest import TestCase
 from app import create_app
@@ -19,21 +21,31 @@ class TestModels(TestCase):
         """check if model User has the required class variables"""""
         self.assertTrue('id' in [attr for attr in dir(self.user)])
         self.assertTrue('username' in [attr for attr in dir(self.user)])
-        self.assertTrue('password_hash' in [attr for attr in dir(self.user)])
         self.assertTrue('firstname' in [attr for attr in dir(self.user)])
         self.assertTrue('lastname' in [attr for attr in dir(self.user)])
+        self.assertTrue('password_hash' in [attr for attr in dir(self.user)])
+        self.assertTrue('security_question' in [attr for attr in dir(self.user)])
+        self.assertTrue('answer' in [attr for attr in dir(self.user)])
 
     def test_shoppinglist_variables(self):
         """check if model ShoppingList has the required class variables"""
         self.assertTrue('id' in [attr for attr in dir(self.shoppinglist)])
         self.assertTrue('title' in [attr for attr in dir(self.shoppinglist)])
         self.assertTrue('user_id' in [attr for attr in dir(self.shoppinglist)])
+        self.assertTrue('created_on' in [attr for attr in dir(
+            self.shoppinglist)])
+        self.assertTrue('modified_on' in [attr for attr in dir(
+            self.shoppinglist)])
 
     def test_shoppinglist_items_variables(self):
         """check if model ShoppingListItems has the required class variables"""
         self.assertTrue('id' in
                         [attr for attr in dir(self.shoppinglist_items)])
         self.assertTrue('name' in
+                        [attr for attr in dir(self.shoppinglist_items)])
+        self.assertTrue('price' in
+                        [attr for attr in dir(self.shoppinglist_items)])
+        self.assertTrue('quantity' in
                         [attr for attr in dir(self.shoppinglist_items)])
         self.assertTrue('shoppinglist_id' in
                         [attr for attr in dir(self.shoppinglist_items)])
@@ -61,7 +73,10 @@ class TestAPI(TestCase):
         # create a user and login to account created
         username = 'user20nm'
         pword = 'test_password'
-        test_user = {'username': username, 'password': pword}
+        security_question = "Am I myself?"
+        answer = 'yes'
+        test_user = {'username': username, 'password': pword,
+                     'answer': answer, 'security_question': security_question}
         self.client().post('/user/register/', data=test_user)
 
         header = {
@@ -72,7 +87,12 @@ class TestAPI(TestCase):
         return header
 
     def test_api_user_password_complexity(self):
-        user_data = {'username': 'test_user200', 'password': '123'}
+        user_data = {
+            'username': 'test_user200',
+            'password': '123',
+            'security_question': 'AM i?',
+            'answer': 'answer'
+        }
         create_user_resource = self.client().post(
             '/user/register/', data=user_data
         )
@@ -91,7 +111,12 @@ class TestAPI(TestCase):
                       str(create_user_resource.data))
 
     def test_api_create_user(self):
-        user_data = {'username': 'test_user2', 'password': 'test_password'}
+        user_data = {
+            'username': 'test_user2',
+            'password': 'test_password',
+            'security_question': 'AM i?',
+            'answer': 'answer'
+        }
         create_user_resource = self.client().post(
             '/user/register/', data=user_data
         )
@@ -100,15 +125,135 @@ class TestAPI(TestCase):
         self.assertIn('test_user', str(create_user_resource.data))
         self.assertIn('id', str(create_user_resource.data))
 
+    def test_api_change_password_with_blank_new_password(self):
+        headers = self.get_authorization_header()
+        user_data = {'password': ''}
+        change_password_resource = self.client().put(
+            '/user/change_password/', data=user_data, headers=headers
+        )
+
+        self.assertEqual(change_password_resource.status_code, 400)
+        self.assertIn('provide a valid password',
+                      str(change_password_resource.data))
+
+    def test_api_change_password(self):
+        headers = self.get_authorization_header()
+        user_data = {'password': 'new_password'}
+        change_password_resource = self.client().put(
+            '/user/change_password/', data=user_data, headers=headers
+        )
+
+        self.assertEqual(change_password_resource.status_code, 200)
+        self.assertIn('successfully', str(change_password_resource.data))
+
+    def test_api_reset_password(self):
+        # Reset password without username
+        reset_password_resource = self.client().get(
+            '/user/reset_password/'
+        )
+
+        self.assertEqual(reset_password_resource.status_code, 400)
+        self.assertIn('user is not specified in path',
+                      str(reset_password_resource.data))
+
+        # reset password for unregistered user
+        reset_password_resource = self.client().get(
+            '/user/reset_password/?user=ashgcvajac'
+        )
+
+        self.assertEqual(reset_password_resource.status_code, 404)
+        self.assertIn('no registered user', str(reset_password_resource.data))
+
+        # reset password for registered user
+        self.get_authorization_header()
+        reset_password_resource = self.client().get(
+            '/user/reset_password/?user=user20nm'
+        )
+
+        self.assertEqual(reset_password_resource.status_code, 200)
+        self.assertIn('myself?', str(reset_password_resource.data))
+
+        # reset password with wrong answer
+        user_data = {
+            'password': 'test_password3',
+            'answer': 'wrong_answer'
+        }
+
+        change_password_resource = self.client().post(
+            '/user/reset_password/?user=user20nm', data=user_data
+        )
+        self.assertEqual(change_password_resource.status_code, 400)
+        self.assertIn('answer is incorrect',
+                      str(change_password_resource.data))
+
+        # reset password with no password
+        user_data = {
+            'answer': 'wrong_answer'
+        }
+
+        change_password_resource = self.client().post(
+            '/user/reset_password/?user=user20nm', data=user_data
+        )
+        self.assertEqual(change_password_resource.status_code, 400)
+        self.assertIn('Please provide a valid password',
+                      str(change_password_resource.data))
+
+        # reset password with no password
+        user_data = {
+            'password': 'test_pword3'
+        }
+
+        change_password_resource = self.client().post(
+            '/user/reset_password/?user=user20nm', data=user_data
+        )
+        self.assertEqual(change_password_resource.status_code, 400)
+        self.assertIn('provide a valid answer',
+                      str(change_password_resource.data))
+
+        # reset password with no password
+        user_data = {
+            'password': 'wrong_answer'
+        }
+
+        change_password_resource = self.client().post(
+            '/user/reset_password/?user=user20nm', data=user_data
+        )
+        self.assertEqual(change_password_resource.status_code, 400)
+        self.assertIn('provide a valid answer',
+                      str(change_password_resource.data))
+
+        # reset password with correct credentials
+        user_data = {
+            'password': 'est_password454',
+            'answer': 'yes'
+        }
+
+        change_password_resource = self.client().post(
+            '/user/reset_password/?user=user20nm', data=user_data
+        )
+        self.assertEqual(change_password_resource.status_code, 200)
+        self.assertIn('successfully',
+                      str(change_password_resource.data))
+
+    def test_api_logout(self):
+        user_logout = self.client().get('/user/logout/')
+
+        self.assertEqual(user_logout.status_code, 200)
+        self.assertIn('User logged out', str(user_logout.data))
+
     def test_api_create_duplicate_username(self):
         # create a user
-        user_data1 = {'username': 'user100', 'password': 'test_password'}
+        user_data1 = {
+            'username': 'user100',
+            'password': 'test_password',
+            'security_question': 'AM i?',
+            'answer': 'answer'
+        }
         self.client().post('/user/register/', data=user_data1)
 
         # create another user with similar credentials
-        user_data2 = {'username': 'user100', 'password': 'test_password'}
         create_user_resource = self.client().post(
-            '/user/register/', data=user_data2
+            '/user/register/', data=user_data1
         )
 
         self.assertEqual(create_user_resource.status_code, 409)
@@ -125,7 +270,12 @@ class TestAPI(TestCase):
                       str(create_user_resource.data))
 
     def test_api_authenticate_user(self):
-        user_data = {'username': 'test_user10', 'password': 'test_password'}
+        user_data = {
+            'username': 'test_user10',
+            'password': 'test_password',
+            'security_question': 'AM i?',
+            'answer': 'answer'
+        }
 
         # create a user
         self.client().post('/user/register/', data=user_data)
@@ -137,6 +287,19 @@ class TestAPI(TestCase):
 
         self.assertEqual(authenticate_user_resource.status_code, 200)
         self.assertIn('token', str(authenticate_user_resource.data))
+
+        user_data2 = {
+            'username': 'trcyujkhbguvy5h',
+            'password': 'test_password'
+        }
+
+        # Login to account created
+        authenticate_user_resource = self.client().post(
+            '/user/login/', data=user_data2
+        )
+
+        self.assertEqual(authenticate_user_resource.status_code, 401)
+        self.assertIn('Wrong', str(authenticate_user_resource.data))
 
     def test_create_shoppinglists_with_blank_title(self):
         # create a shoppinglists
@@ -178,6 +341,8 @@ class TestAPI(TestCase):
         )
         self.assertEqual(get_shoppinglist_resource.status_code, 200)
         self.assertIn('back to school', str(get_shoppinglist_resource.data))
+        self.assertIn('created_on', str(get_shoppinglist_resource.data))
+        self.assertIn('modified_on', str(get_shoppinglist_resource.data))
 
         # test API can update shoppinglist
         response = self.client().put(
@@ -193,6 +358,11 @@ class TestAPI(TestCase):
             headers=headers
         )
         self.assertIn('weekend party', str(shoppinglist.data))
+        # get current timestamp
+        epoch_time = time.time()
+        timestamp = datetime.datetime.fromtimestamp(epoch_time).strftime(
+            '%Y-%m-%d %H:%M')
+        self.assertIn(timestamp, str(shoppinglist.data))
 
         # test API can delete shoppinglist
         # delete shoppinglist
@@ -316,7 +486,7 @@ class TestAPI(TestCase):
         # test API can create shoppinglist item
         create_item_resource = self.client().post(
             '/shoppinglist/{}/items/'.format(shoppinglist_id),
-            data={'name': 'touring shoes'},
+            data={'name': 'touring shoes', 'price': 10},
             headers=headers
         )
         self.assertEqual(create_item_resource.status_code, 201)
@@ -336,11 +506,17 @@ class TestAPI(TestCase):
         )
         self.assertEqual(get_item_resource.status_code, 200)
         self.assertIn('touring shoes', str(get_item_resource.data))
+        self.assertIn('price', str(get_item_resource.data))
+        self.assertIn('quantity', str(get_item_resource.data))
 
         # test API can update shoppinglist item
         update_item_resource = self.client().put(
-            '/shoppinglist/{}/items/{}'.format(shoppinglist_id, item_id),
-            data={'name': 'Swimming floaters'},
+            '/items/{}'.format(item_id),
+            data={
+                'name': 'Swimming floaters',
+                'price': '100',
+                'quantity': '1'
+            },
             headers=headers
         )
         self.assertEqual(update_item_resource.status_code, 200)
@@ -354,7 +530,7 @@ class TestAPI(TestCase):
 
         # test API can delete shoppinglist item
         delete_item_resource = self.client().delete(
-            '/shoppinglist/{}/items/{}'.format(shoppinglist_id, item_id),
+            '/items/{}'.format(item_id),
             headers=headers
         )
         self.assertEqual(delete_item_resource.status_code, 200)
@@ -384,7 +560,7 @@ class TestAPI(TestCase):
 
         # attempt to retrieve item that does not exist
         get_shoppinglist_resource = self.client().get(
-            '/shoppinglist/{}/items/12345'.format(shoppinglist_id),
+            '/items/12345'.format(shoppinglist_id),
             headers=headers
         )
         self.assertEqual(get_shoppinglist_resource.status_code, 404)
@@ -394,11 +570,30 @@ class TestAPI(TestCase):
         # create item with blank name
         create_item_resource = self.client().post(
             '/shoppinglist/{}/items/'.format(shoppinglist_id),
-            data=None,
+            data={'price': '10'},
             headers=headers
         )
         self.assertEqual(create_item_resource.status_code, 400)
         self.assertIn('name must be provided', str(create_item_resource.data))
+
+        # create item with no price
+        create_item_resource = self.client().post(
+            '/shoppinglist/{}/items/'.format(shoppinglist_id),
+            data={'name': 'item one'},
+            headers=headers
+        )
+        self.assertEqual(create_item_resource.status_code, 400)
+        self.assertIn('provide a valid item price',
+                      str(create_item_resource.data))
+
+        # Fetch items from list that doesn't exist
+        create_item_resource = self.client().get(
+            '/shoppinglist/{}/items/'.format(100000000000000000),
+            headers=headers
+        )
+        self.assertEqual(create_item_resource.status_code, 404)
+        self.assertIn('Requested shoppinglist was not found',
+                      str(create_item_resource.data))
 
     def test_search_items(self):
         headers = self.get_authorization_header()
@@ -430,7 +625,7 @@ class TestAPI(TestCase):
         # create an item
         self.client().post(
             '/shoppinglist/{}/items/'.format(shoppinglist_id),
-            data={'name': 'touring shorts'},
+            data={'name': 'touring shorts', 'price': '10'},
             headers=headers
         )
 

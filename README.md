@@ -18,6 +18,12 @@ These instructions will get you a copy of the project up and running on your loc
 
 ### How to run this application
 
+## Prerequisites
+* [Python 3.5](https://www.python.org/downloads/release/python-350/)
+* [virtualenv](https://virtualenv.pypa.io/en/stable/)(with [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/install.html) optionally)
+* [Flask-Api](www.flaskapi.org)
+* [Postgres](https://wiki.postgresql.org/wiki/Detailed_installation_guides)
+
 ##### Install Python
 
 ​	You can find the documentation for python **[here](https://www.python.org/)**
@@ -94,9 +100,9 @@ https://einstein-shoppinglist-api.herokuapp.com/apidocs/
 | PUT /shoppinglist/`<shopping-list id>`   | Updates the specified shopping list      |
 | DELETE /shoppinglist/`<shopping-list id>` | Delete the specified shopping list       |
 | POST /shoppinglist/`<shopping-list id>`/items/ | Create a new item in shopping list       |
-| PUT  /shoppinglist/`<shopping-list id>`/items/`<item id>` | Update an item in a shopping list        |
-| GET /shoppinglist/`<shopping-list id>`/items/ | list all items in a shopping list        |
-| DELETE /shoppinglist/`<shopping-list id>`/item/`<item id>` | Delete a specified item in a shopping list |
+| PUT  /items/`<item id>` | Update an item in a shopping list        |
+| GET /items/ | list all items in a shopping list        |
+| DELETE /item/`<item id>` | Delete a specified item in a shopping list |
 
 
 
