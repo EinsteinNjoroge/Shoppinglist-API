@@ -18,6 +18,12 @@ These instructions will get you a copy of the project up and running on your loc
 
 ### How to run this application
 
+## Prerequisites
+* [Python 3.5](https://www.python.org/downloads/release/python-350/)
+* [virtualenv](https://virtualenv.pypa.io/en/stable/)(with [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/install.html) optionally)
+* [Flask-Api](www.flaskapi.org)
+* [Postgres](https://wiki.postgresql.org/wiki/Detailed_installation_guides)
+
 ##### Install Python
 
 ​	You can find the documentation for python **[here](https://www.python.org/)**
@@ -28,7 +34,8 @@ These instructions will get you a copy of the project up and running on your loc
 
 > https://github.com/EinsteinCarrey/Shoppinglist-API.git
 
-1. ##### Create a virtual environment
+
+##### Create a virtual environment
 
    ​	Use this [**guide**](http://sourabhbajaj.com/mac-setup/Python/virtualenv.html).
 
@@ -37,6 +44,32 @@ These instructions will get you a copy of the project up and running on your loc
    1. ##### Install project dependencies
 
      run the command `pip -r install requirements.txt` on the command line
+
+
+#### Environment Variables
+    Create a .env file in the root directory and add the following:
+    ```
+    export FLASK_CONFIG="development"
+    export db_url="postgresql://{username}:{password}@localhost/flask_api_db"
+    ```
+
+
+#### Migrations
+    On your psql console, create your database:
+    ```
+    > CREATE DATABASE flask_api_db;
+    ```
+    Then, make and apply your Migrations
+    ```
+    (venv)$ python manage.py db init
+
+    (venv)$ python manage.py db migrate
+    ```
+
+    And finally, migrate your migrations to persist on the DB
+    ```
+    (venv)$ python manage.py db upgrade
+    ```
 
 
 ##### Run the server
@@ -67,9 +100,9 @@ https://einstein-shoppinglist-api.herokuapp.com/apidocs/
 | PUT /shoppinglist/`<shopping-list id>`   | Updates the specified shopping list      |
 | DELETE /shoppinglist/`<shopping-list id>` | Delete the specified shopping list       |
 | POST /shoppinglist/`<shopping-list id>`/items/ | Create a new item in shopping list       |
-| PUT  /shoppinglist/`<shopping-list id>`/items/`<item id>` | Update an item in a shopping list        |
-| GET /shoppinglist/`<shopping-list id>`/items/ | list all items in a shopping list        |
-| DELETE /shoppinglist/`<shopping-list id>`/item/`<item id>` | Delete a specified item in a shopping list |
+| PUT  /items/`<item id>` | Update an item in a shopping list        |
+| GET /items/ | list all items in a shopping list        |
+| DELETE /item/`<item id>` | Delete a specified item in a shopping list |
 
 
 

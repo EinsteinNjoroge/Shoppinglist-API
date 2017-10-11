@@ -1,5 +1,7 @@
 import hashlib
 import os
+import time
+import datetime
 from flask import request
 from flask import jsonify
 from flask_api import FlaskAPI
@@ -35,6 +37,21 @@ def create_app(config_mode):
         }
         return make_response(data, status_code=200)
 
+    @flask_api.errorhandler(404)
+    def route_not_found(e):
+        data = {
+            "error_msg": "Route does not exist. Please check the path you "
+                         "provided and try again"
+        }
+        return make_response(data, status_code=405)
+
+    @flask_api.errorhandler(405)
+    def method_not_allowed(e):
+        data = {
+            "error_msg": "This method is not allowed on this path"
+        }
+        return make_response(data, status_code=405)
+
     @flask_api.route('/user/register/', methods=['POST'])
     def create_user():
         """Creates a user account
@@ -49,10 +66,20 @@ def create_app(config_mode):
         # Create a user account with the credentials provided
         pword = str(request.data.get('password', ''))
         username = str(request.data.get('username', '')).lower().strip()
+        answer = str(request.data.get('answer', '')).lower().strip()
+        security_question = str(request.data.get('security_question',
+                                                 '')).lower().strip()
 
         if not username or not pword:
             data = {
                 "error_msg": "Please provide a valid username and password"
+            }
+            return make_response(data, status_code=400)
+
+        if not answer or not security_question:
+            data = {
+                "error_msg": "Please provide a valid security question and "
+                             "answer"
             }
             return make_response(data, status_code=400)
 
@@ -72,7 +99,8 @@ def create_app(config_mode):
 
         # Create a user
         password_hash = sha1_hash(pword)
-        new_user = User(username=username, password_hash=password_hash)
+        new_user = User(username=username, password_hash=password_hash,
+                        answer=answer, security_question=security_question)
         new_user.save()
 
         data = {
@@ -132,6 +160,95 @@ def create_app(config_mode):
             return True
 
         return False
+
+    @flask_api.route('/user/logout/', methods=['GET'])
+    def logout_user():
+        global user_logged_in
+        user_logged_in = None
+        data = {
+            "message": "User logged out"
+        }
+        return make_response(data, 200)
+
+    @flask_api.route('/user/change_password/', methods=['PUT'])
+    @auth.login_required
+    def change_password():
+
+        pword = str(request.data.get('password', ''))
+
+        if not pword:
+            data = {
+                "error_msg": "Please provide a valid password"
+            }
+            return make_response(data, status_code=400)
+
+        user_logged_in.password_hash = sha1_hash(pword)
+        user_logged_in.save()
+        data = {
+            'message': "Password has been changed successfully"
+        }
+        return make_response(data, 200)
+
+    @flask_api.route('/user/reset_password/', methods=['GET', 'POST'])
+    def reset_password():
+
+        args = request.args
+        if not args or 'user' not in args:
+            data = {
+                "error_msg": "user is not specified in path"
+            }
+            return make_response(data, status_code=400)
+
+        username = str(args['user'])
+        user = User.query.filter_by(username=username).first()
+
+        # Get security question
+        if request.method == 'GET':
+
+            if not user:
+                data = {
+                    "error_msg": "There is no registered user with the "
+                                 "username `{}`".format(username)
+                }
+                return make_response(data, status_code=404)
+
+            data = {
+                "security_question": user.security_question
+            }
+            return make_response(data, status_code=200)
+
+        # METHOD POST
+        # reset password
+        pword = str(request.data.get('password', ''))
+        answer = str(request.data.get('answer', ''))
+
+        if not pword or len(pword) < 6:
+            data = {
+                "error_msg": "Please provide a valid password (At-least 6 "
+                             "characters)"
+            }
+            return make_response(data, status_code=400)
+
+        if not answer:
+            data = {
+                "error_msg": "Please provide a valid answer for the"
+                             " security question"
+            }
+            return make_response(data, status_code=400)
+
+        stored_answer = str(user.answer)
+        if stored_answer.lower() != answer.lower():
+            data = {
+                "error_msg": "Your security question answer is incorrect."
+            }
+            return make_response(data, status_code=400)
+
+        user.password_hash = sha1_hash(pword)
+        user.save()
+        data = {
+            'message': "Password has been reset successfully"
+        }
+        return make_response(data, 200)
 
     @flask_api.route('/shoppinglist/', methods=['POST', 'GET'])
     @auth.login_required
@@ -210,7 +327,9 @@ def create_app(config_mode):
         for shopping_list in shopping_lists:
             list_details = {
                 'id': shopping_list.id,
-                'title': shopping_list.title
+                'title': shopping_list.title,
+                'created_on': shopping_list.created_on,
+                'modified_on': shopping_list.modified_on
             }
             data.append(list_details)
         return make_response(data, status_code=200)
@@ -237,11 +356,19 @@ def create_app(config_mode):
             if error_message:
                 return error_message
 
+            # get current timestamp
+            epoch_time = time.time()
+            timestamp = datetime.datetime.fromtimestamp(epoch_time).strftime(
+                '%Y-%m-%d %H:%M:%S')
+
             shopping_list.title = title
+            shopping_list.modified_on = timestamp
             shopping_list.save()
+
             data = {
                 'id': shopping_list.id,
-                'title': shopping_list.title
+                'title': shopping_list.title,
+                'modified_on': shopping_list.modified_on
             }
             return make_response(data, 200)
 
@@ -256,7 +383,9 @@ def create_app(config_mode):
         # retrieve the list with the id provided
         list_details = {
             'id': shopping_list.id,
-            'title': shopping_list.title
+            'title': shopping_list.title,
+            'modified_on': shopping_list.modified_on,
+            'created_on': shopping_list.created_on
         }
         return make_response(list_details, status_code=200)
 
@@ -275,102 +404,130 @@ def create_app(config_mode):
         if request.method == 'POST':
             # Create shoppinglist item with the name provided
             name = str(request.data.get('name', '')).lower().strip()
+            price = str(request.data.get('price', ''))
+            quantity = str(request.data.get('quantity', '1'))
 
             error_message = validate_item_name(name, list_id)
+
+            if not error_message:
+                error_message = validate_item_price_and_quantity(
+                    price, quantity)
 
             if error_message:
                 return error_message
 
-            item = ShoppingListItems(name=name, shoppinglist_id=list_id)
+            item = ShoppingListItems(name=name, shoppinglist_id=list_id,
+                                     price=price, quantity=quantity)
             item.save()
             data = {
                 'id': item.id,
-                'name': item.name
+                'name': item.name,
+                'price': item.price,
+                'quantity': item.quantity
             }
             return make_response(data, status_code=201)
 
-        else:
-            items = None
-            limit = None
+        # METHOD GET
 
-            # check if a search keyword has been provided
-            args = request.args
-            if args:
+        items = None
+        limit = None
 
-                if 'limit' in args:
-                    # limit number of results returned
-                    limit = int(args['limit'])
+        # check if a search keyword has been provided
+        args = request.args
+        if args:
 
-                if 'q' in args:
-                    # search for item that contain keyword provided
-                    keyword = str(args['q']).lower()
+            if 'limit' in args:
+                # limit number of results returned
+                limit = int(args['limit'])
 
-                    if limit:
-                        # limit number of results returned
-                        items = ShoppingListItems.query.filter(
-                            ShoppingListItems.name.like(
-                                "%{}%".format(keyword)),
-                            ShoppingListItems.shoppinglist_id == list_id
-                        ).limit(limit).all()
-
-                    else:
-                        # get all results that match keyword
-                        items = ShoppingListItems.query.filter(
-                            ShoppingListItems.name.like(
-                                "%{}%".format(keyword)
-                            ), ShoppingListItems.shoppinglist_id == list_id
-                        ).all()
-
-                    # if no items contains keyword
-                    if len(items) < 1:
-                        data = {'error_msg': "No item matches the keyword "
-                                             "`{}`.".format(keyword)}
-                        return make_response(data, status_code=404)
-
-            if not items:
+            if 'q' in args:
+                # search for item that contain keyword provided
+                keyword = str(args['q']).lower()
 
                 if limit:
-                    # limit number or results to be returned
-                    items = ShoppingListItems.query.filter_by(
-                        shoppinglist_id=list_id).limit(limit).all()
+                    # limit number of results returned
+                    items = ShoppingListItems.query.filter(
+                        ShoppingListItems.name.like(
+                            "%{}%".format(keyword)),
+                        ShoppingListItems.shoppinglist_id == list_id
+                    ).limit(limit).all()
+
                 else:
-                    #  return all results
-                    items = ShoppingListItems.query.filter_by(
-                        shoppinglist_id=list_id)
+                    # get all results that match keyword
+                    items = ShoppingListItems.query.filter(
+                        ShoppingListItems.name.like(
+                            "%{}%".format(keyword)
+                        ), ShoppingListItems.shoppinglist_id == list_id
+                    ).all()
 
-            data = []
-            for item in items:
-                list_details = {
-                    'id': item.id,
-                    'name': item.name
-                }
-                data.append(list_details)
-            return make_response(data, status_code=200)
+                # if no items contains keyword
+                if len(items) < 1:
+                    data = {'error_msg': "No item matches the keyword "
+                                         "`{}`.".format(keyword)}
+                    return make_response(data, status_code=404)
 
-    @flask_api.route('/shoppinglist/<int:list_id>/items/<int:item_id>',
+        if not items:
+
+            if limit:
+                # limit number or results to be returned
+                items = ShoppingListItems.query.filter_by(
+                    shoppinglist_id=list_id).limit(limit).all()
+            else:
+                #  return all results
+                items = ShoppingListItems.query.filter_by(
+                    shoppinglist_id=list_id)
+
+        data = []
+        for item in items:
+            list_details = {
+                'id': item.id,
+                'name': item.name,
+                'price': item.price,
+                'quantity': item.quantity
+            }
+            data.append(list_details)
+        return make_response(data, status_code=200)
+
+    @flask_api.route('/items/<int:item_id>',
                      methods=['PUT', 'GET', 'DELETE'])
     @auth.login_required
-    def shoppinglist_item(list_id, item_id):
+    def shoppinglist_item(item_id):
 
         user_id = user_logged_in.id
-        shopping_list = Shoppinglists.query.filter_by(id=list_id,
-                                                      user_id=user_id).first()
-        item = ShoppingListItems.query.filter_by(
-            id=item_id, shoppinglist_id=list_id).first()
 
-        if not shopping_list or not item:
+        item = ShoppingListItems.query.filter_by(
+            id=item_id).first()
+
+        if not item:
+            data = {'error_msg': "Requested shoppinglist item was not found"}
+            return make_response(data=data, status_code=404)
+
+        shoppinglist_id = item.shoppinglist_id
+        shopping_list = Shoppinglists.query.filter_by(id=shoppinglist_id,
+                                                      user_id=user_id).first()
+
+        if not shopping_list:
             data = {'error_msg': "Requested shoppinglist item was not found"}
             return make_response(data=data, status_code=404)
 
         if request.method == 'PUT':
             name = str(request.data.get('name', '')).lower().strip()
+            price = str(request.data.get('price', ''))
+            quantity = str(request.data.get('quantity', ''))
 
             # check if item name is valid
-            error_message = validate_item_name(name, list_id)
+            error_message = validate_item_name(name, shoppinglist_id)
+
+            if not error_message:
+                error_message = validate_item_price_and_quantity(
+                    price, quantity)
+
             if error_message:
                 return error_message
 
             item.name = name
+            item.price = price
+            item.quantity = quantity
             item.save()
 
             data = {'id': item.id, 'name': item.name}
@@ -385,7 +542,9 @@ def create_app(config_mode):
         # retrieve the list with the id provided
         data = {
             'id': item.id,
-            'name': item.name
+            'name': item.name,
+            'price': item.price,
+            'quantity': item.quantity
         }
         return make_response(data, status_code=200)
 
@@ -462,6 +621,31 @@ def validate_item_name(name, list_id):
             'error_msg': "Item `{}` already exists".format(name)
         }
         return make_response(data, status_code=409)
+
+
+def validate_item_price_and_quantity(price, quantity):
+    """Validates that a name has the at-least one character and that no
+    other item - belonging to the current user - has a similar name
+
+        :arg:
+            name (string): The name of item to be created
+            list_id (int): ID of the shoppinglist where item will be created
+
+        :return
+            response (json): Error message generated if any, otherwise
+            returns None
+    """
+    if not price.isdigit():
+        data = {
+            'error_msg': "Please provide a valid item price"
+        }
+        return make_response(data, status_code=400)
+
+    if not quantity.isdigit():
+        data = {
+            'error_msg': "Please provide a valid quantity"
+        }
+        return make_response(data, status_code=400)
 
 
 def sha1_hash(value):
