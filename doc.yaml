@@ -24,6 +24,16 @@ paths:
           type: string
           required: true
           default: "username"
+        - in: body
+          name: security_question
+          type: string
+          required: true
+          default: "Who am i?"
+        - in: body
+          name: answer
+          type: string
+          required: true
+          default: "my name"
       responses:
         201:
           description: User acount has been created successfully
@@ -41,6 +51,10 @@ paths:
           description: Password provided is shorter than 6 characters (OR) Username `username` is already registered.
         400:
           description: Username or Password provided is not valid
+        400:
+          description: Security question is not provided
+        400:
+          description: Answer provided is not valid
 
   "/user/login/":
     post:
@@ -83,6 +97,124 @@ paths:
                 type: string
                 description: Error message returned
                 default: "Please provide a valid username and password"
+
+  "/user/change_password/":
+    post:
+      tags:
+        - Authentication
+      summary: User authentication
+      parameters:
+      - name: password
+        in: body
+        type: string
+        required: true
+        default: "new_password"
+      responses:
+        200:
+          description: Password has been changed successfully
+          schema:
+            properties:
+              message:
+                type: string
+                description: Password has been changed successfully
+                default: "Password has been changed successfully"
+        400:
+          description: Password not provided
+          schema:
+            properties:
+              error_msg:
+                type: string
+                description: Error message returned
+                default: "Please provide a valid password"
+        409:
+          description: Password provided is not valid
+          schema:
+            properties:
+              error_msg:
+                type: string
+                description: Error message returned
+                default: "Please provide a valid password"
+
+  "/user/reset_password/":
+    get:
+      tags:
+        - Authentication
+      summary: User authentication
+      parameters:
+      - name: user
+        in: path
+        type: string
+        required: true
+        default: "username"
+      responses:
+        200:
+          description: Security question retrieved successfully
+          schema:
+            properties:
+              seurity_question:
+                type: string
+                description: Securtiy question for user authentication
+                default: "who am i?"
+        400:
+          description: Username not provided
+          schema:
+            properties:
+              error_msg:
+                type: string
+                description: Error message returned
+                default: "Please provide a valid username"
+
+    post:
+      tags:
+        - Authentication
+      summary: User authentication
+      parameters:
+      - name: password
+        in: body
+        type: string
+        required: true
+        default: "new_password"
+      - name: answer
+        in: body
+        type: string
+        required: true
+        default: "my name"
+      responses:
+        200:
+          description: Password has been reset successfully
+          schema:
+            properties:
+              message:
+                type: string
+                description: Password has been reset successfully
+                default: "Password has been reset successfully"
+        400:
+          description: Password or answer was not provided
+          schema:
+            properties:
+              error_msg:
+                type: string
+                description: Error message returned
+                default: "Please provide a valid password"
+              error_msg:
+                type: string
+                description: Error message returned
+                default: "Please provide a valid answer"
+        409:
+          description: Password provided does not meet expected standards
+          schema:
+            properties:
+              error_msg:
+                type: string
+                description: Error message returned
+                default: "Please provide a valid password"
+          description: Anser provided is incorrect
+          schema:
+            properties:
+              error_msg:
+                type: string
+                description: Error message returned
+                default: "Answer provided is incorrect"
 
   "/shoppinglist/":
     post:
@@ -145,8 +277,17 @@ paths:
                 type: integer
                 description: Retrieve a specific number of results
                 default: 10
+        - name: q
+          in: path
+          type: string
+          schema:
+            properties:
+              q:
+                type: str
+                description: Search shoppinglist for specific keyword
+                default: "trip"
       responses:
-        201:
+        200:
           description: List of shoppinglists retrieved
           schema:
             properties:
@@ -158,6 +299,14 @@ paths:
                 type: integer
                 description: ID of shoppinglist
                 default: 20
+              created_on:
+                type: string
+                description: Timestamp when shoppinglist was created
+                default: "2017-10-12 10:40:32"
+              modified_on:
+                type: string
+                description: Timestamp when shoppinglist was updated
+                default: "2017-10-12 10:40:32"
         401:
           description: Username and password provided were not authentic
 
@@ -189,6 +338,14 @@ paths:
                 type: integer
                 description: ID of shoppinglist
                 default: 20
+              created_on:
+                type: string
+                description: Timestamp when shoppinglist was created
+                default: "2017-10-12 10:40:32"
+              modified_on:
+                type: string
+                description: Timestamp when shoppinglist was updated
+                default: "2017-10-12 10:40:32"
         404:
           description: There is no shoppinglist that has the id provided
 
@@ -276,6 +433,24 @@ paths:
                 type: integer
                 description: Identifier of shoppinglist
                 default: 20
+        - name: limit
+          in: path
+          type: string
+          schema:
+            properties:
+              limit:
+                type: integer
+                description: Retrieve a specific number of results
+                default: 10
+        - name: q
+          in: path
+          type: string
+          schema:
+            properties:
+              q:
+                type: str
+                description: Search items for specific keyword
+                default: "sausage"
       responses:
         200:
           description: Items retrieved successfully
@@ -285,8 +460,8 @@ paths:
                 type: list
                 description: items in shoppinglist
                 default: [
-                    {"id": 20, "name": "sausages"},
-                    {"id": 70, "name": "nyama bites"}
+                    {"id": 20, "name": "sausages",
+                     "price": 200, "quantity": 1}
                   ]
         404:
           description: There is no shoppinglist that has the id provided
@@ -313,6 +488,24 @@ paths:
                 type: string
                 description: Name of item to be created
                 default: "Barbecue rack"
+        - name: price
+          in: body
+          type: integer
+          schema:
+            properties:
+              price:
+                type: integer
+                description: Price of item to be added
+                default: 200
+        - name: quantity
+          in: body
+          type: integer
+          schema:
+            properties:
+              quantity:
+                type: integer
+                description: Number of item to be added
+                default: 1
       responses:
         201:
           description: Items has been created successfully
@@ -355,7 +548,8 @@ paths:
                 type: list
                 description: item in shoppinglist
                 default: [
-                    {"id": 50, "name": "nyama bites"}
+                    {"id": 50, "name": "nyama bites",
+                    "price": 200, "quantity": 1}
                   ]
         404:
           description: There is no item that has the id provided
@@ -382,6 +576,24 @@ paths:
                 type: string
                 description: New name of item
                 default: "Sausage packs"
+        - name: price
+          in: body
+          type: string
+          schema:
+            properties:
+              price:
+                type: string
+                description: New name of item
+                default: 200
+        - name: quantity
+          in: body
+          type: string
+          schema:
+            properties:
+              quantity:
+                type: string
+                description: New name of item
+                default: 1
       responses:
         200:
           description: Items has been updated successfully
