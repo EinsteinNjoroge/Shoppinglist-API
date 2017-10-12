@@ -560,7 +560,7 @@ class TestAPI(TestCase):
 
         # attempt to retrieve item that does not exist
         get_shoppinglist_resource = self.client().get(
-            '/items/12345'.format(shoppinglist_id),
+            '/items/12345',
             headers=headers
         )
         self.assertEqual(get_shoppinglist_resource.status_code, 404)
