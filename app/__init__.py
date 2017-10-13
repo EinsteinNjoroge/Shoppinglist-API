@@ -22,6 +22,7 @@ user_logged_in = None
 def create_app(config_mode):
     flask_api = FlaskAPI(__name__, instance_relative_config=True)
     flask_api.config.from_object(configurations[config_mode])
+    flask_api.url_map.strict_slashes = False
     flask_api.config.from_pyfile('config.py')
     flask_api.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     flask_api.secret_key = secret_key
@@ -408,7 +409,10 @@ def create_app(config_mode):
             # Create shoppinglist item with the name provided
             name = str(request.data.get('name', '')).lower().strip()
             price = str(request.data.get('price', ''))
-            quantity = str(request.data.get('quantity', '1'))
+            quantity = str(request.data.get('quantity', ''))
+
+            if not quantity:
+                quantity = 1
 
             error_message = validate_item_name(name, list_id)
 
@@ -630,13 +634,18 @@ def validate_item_price_and_quantity(price, quantity):
             response (json): Error message generated if any, otherwise
             returns None
     """
-    if not price.isdigit():
+
+    try:
+        float(price)
+    except ValueError:
         data = {
             'error_msg': "Please provide a valid item price"
         }
         return make_response(data, status_code=400)
 
-    if not quantity.isdigit():
+    try:
+        float(quantity)
+    except ValueError:
         data = {
             'error_msg': "Please provide a valid quantity"
         }

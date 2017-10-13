@@ -139,8 +139,8 @@ class TestAPI(TestCase):
         )
         return item_resource
 
-    def get_item_id(self):
-        create_item_resource = self.create_item_resource()
+    def get_item_id(self, shoppinglist_id=None):
+        create_item_resource = self.create_item_resource(shoppinglist_id)
 
         # get id of item created
         json_item_resource = json.loads(
@@ -586,6 +586,23 @@ class TestAPI(TestCase):
         self.assertEqual(update_item_resource.status_code, 200)
         self.assertIn('swimming floaters', str(update_item_resource.data))
 
+    def test_update_item__with_duplicate_name(self):
+
+        shoppinglist_id = self.get_shoppinglist_id()
+
+        # test API can update shoppinglist item
+        update_item_resource = self.client().put(
+            '/items/{}'.format(self.get_item_id(shoppinglist_id)),
+            data={
+                'name': 'touring shoes',
+                'price': '100',
+                'quantity': '1'
+            },
+            headers=self.get_authorization_header()
+        )
+        self.assertEqual(update_item_resource.status_code, 409)
+        self.assertIn('already exist', str(update_item_resource.data))
+
     def test_delete_item(self):
         # test API can delete shoppinglist item
         delete_item_resource = self.client().delete(
@@ -611,11 +628,22 @@ class TestAPI(TestCase):
         # create item with blank name
         create_item_resource = self.client().post(
             '/shoppinglist/{}/items/'.format(self.get_shoppinglist_id()),
-            data={'price': '10'},
+            data={'price': 10},
             headers=self.get_authorization_header()
         )
         self.assertEqual(create_item_resource.status_code, 400)
         self.assertIn('name must be provided', str(create_item_resource.data))
+
+    def test_create_item_with_invalid_price(self):
+
+        create_item_resource = self.client().post(
+            '/shoppinglist/{}/items/'.format(self.get_shoppinglist_id()),
+            data={'name': "asdas", 'price': "asdas"},
+            headers=self.get_authorization_header()
+        )
+        self.assertEqual(create_item_resource.status_code, 400)
+        self.assertIn('provide a valid item price',
+                      str(create_item_resource.data))
 
     def test_create_item_with_no_price(self):
         # create item with no price
@@ -677,6 +705,26 @@ class TestAPI(TestCase):
 
         self.assertEqual(search_items_resource.status_code, 200)
         self.assertIn('tour', str(search_items_resource.data))
+
+    def test_items_pagination(self):
+        headers = self.get_authorization_header()
+        shoppinglist_id = self.get_shoppinglist_id()
+        self.create_item_resource(shoppinglist_id)
+
+        # get items with pagination
+        get_paginated_items_resource = self.client().get(
+            '/shoppinglist/{}/items/?limit=1'.format(shoppinglist_id),
+            headers=headers
+        )
+
+        # covert response array to json
+        json_data = json.loads(
+            get_paginated_items_resource.data.decode(
+                'utf-8').replace("'", "\"")
+        )
+
+        self.assertEqual(get_paginated_items_resource.status_code, 200)
+        self.assertEqual(len(json_data), 1)
 
     def tearDown(self):
         with self.app.app_context():
