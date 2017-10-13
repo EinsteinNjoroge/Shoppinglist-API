@@ -48,10 +48,6 @@ class User(db.Model):
         db.session.add(self)
         db.session.commit()
 
-    def delete(self):
-        db.session.delete(self)
-        db.session.commit()
-
 
 class Shoppinglists(db.Model):
     """This class defines the shoppinglists table """
@@ -88,10 +84,6 @@ class Shoppinglists(db.Model):
         self.created_on = timestamp
         self.modified_on = "--"
 
-    @staticmethod
-    def get_all():
-        return Shoppinglists.query.all()
-
     def save(self):
         db.session.add(self)
         db.session.commit()
@@ -124,10 +116,6 @@ class ShoppingListItems(db.Model):
         self.shoppinglist_id = shoppinglist_id
         self.price = price
         self.quantity = quantity
-
-    @staticmethod
-    def get_all():
-        return ShoppingListItems.query.all()
 
     def save(self):
         db.session.add(self)
