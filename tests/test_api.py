@@ -24,7 +24,8 @@ class TestModels(TestCase):
         self.assertTrue('firstname' in [attr for attr in dir(self.user)])
         self.assertTrue('lastname' in [attr for attr in dir(self.user)])
         self.assertTrue('password_hash' in [attr for attr in dir(self.user)])
-        self.assertTrue('security_question' in [attr for attr in dir(self.user)])
+        self.assertTrue('security_question' in
+                        [attr for attr in dir(self.user)])
         self.assertTrue('answer' in [attr for attr in dir(self.user)])
 
     def test_shoppinglist_variables(self):
@@ -69,6 +70,7 @@ class TestAPI(TestCase):
 
         self.client = self.app.test_client
 
+    # HELPER FUNCTIONS
     def get_authorization_header(self):
         # create a user and login to account created
         username = 'user20nm'
@@ -85,6 +87,70 @@ class TestAPI(TestCase):
             ).decode('ascii')
         }
         return header
+
+    def create_shoppinglist_resource(self):
+        headers = self.get_authorization_header()
+
+        # create a shoppinglists
+        shoppinglist_resource = self.client().post(
+            '/shoppinglist/',
+            data={'title': 'back to school'},
+            headers=headers
+        )
+        return shoppinglist_resource
+
+    def get_shoppinglist_resource(self):
+        headers = self.get_authorization_header()
+        self.create_shoppinglist_resource()
+        shoppinglist_resource = self.client().get(
+            '/shoppinglist/',
+            headers=headers
+        )
+        return shoppinglist_resource
+
+    def get_shoppinglist_id(self):
+        create_shoppinglist_resource = self.create_shoppinglist_resource()
+        # get id of shoppinglist created
+        json_shoppinglist_resource = json.loads(
+            create_shoppinglist_resource.data.decode('utf-8').replace(
+                "'", "\"")
+        )
+        shoppinglist_id = json_shoppinglist_resource['id']
+        return shoppinglist_id
+
+    @staticmethod
+    def get_current_timestamp():
+        # get current timestamp
+        epoch_time = time.time()
+        timestamp = datetime.datetime.fromtimestamp(epoch_time).strftime(
+            '%Y-%m-%d %H:%M')
+        return timestamp
+
+    def create_item_resource(self, shoppinglist_id=None):
+        headers = self.get_authorization_header()
+        if not shoppinglist_id:
+            shoppinglist_id = self.get_shoppinglist_id()
+
+        item_resource = self.client().post(
+            '/shoppinglist/{}/items/'.format(shoppinglist_id),
+            data={'name': 'touring shoes', 'price': 10},
+            headers=headers
+        )
+        return item_resource
+
+    def get_item_id(self):
+        create_item_resource = self.create_item_resource()
+
+        # get id of item created
+        json_item_resource = json.loads(
+            create_item_resource.data.decode('utf-8').replace(
+                "'", "\"")
+        )
+        item_id = json_item_resource['id']
+
+        return item_id
+
+    # END HELPER FUNCTIONS
 
     def test_api_user_password_complexity(self):
         user_data = {
@@ -146,7 +212,7 @@ class TestAPI(TestCase):
         self.assertEqual(change_password_resource.status_code, 200)
         self.assertIn('successfully', str(change_password_resource.data))
 
-    def test_api_reset_password(self):
+    def test_api_reset_password_with_no_user(self):
         # Reset password without username
         reset_password_resource = self.client().get(
             '/user/reset_password/'
@@ -156,6 +222,7 @@ class TestAPI(TestCase):
         self.assertIn('user is not specified in path',
                       str(reset_password_resource.data))
 
+    def test_api_reset_password_unregistered_user(self):
         # reset password for unregistered user
         reset_password_resource = self.client().get(
             '/user/reset_password/?user=ashgcvajac'
@@ -164,6 +231,7 @@ class TestAPI(TestCase):
         self.assertEqual(reset_password_resource.status_code, 404)
         self.assertIn('no registered user', str(reset_password_resource.data))
 
+    def test_api_reset_password_get_security_question(self):
         # reset password for registered user
         self.get_authorization_header()
         reset_password_resource = self.client().get(
@@ -173,6 +241,8 @@ class TestAPI(TestCase):
         self.assertEqual(reset_password_resource.status_code, 200)
         self.assertIn('myself?', str(reset_password_resource.data))
 
+    def test_api_reset_password_wrong_answer(self):
+        self.get_authorization_header()
         # reset password with wrong answer
         user_data = {
             'password': 'test_password3',
@@ -186,6 +256,8 @@ class TestAPI(TestCase):
         self.assertIn('answer is incorrect',
                       str(change_password_resource.data))
 
+    def test_api_reset_password_no_password(self):
+        self.get_authorization_header()
         # reset password with no password
         user_data = {
             'answer': 'wrong_answer'
@@ -198,7 +270,9 @@ class TestAPI(TestCase):
         self.assertIn('Please provide a valid password',
                       str(change_password_resource.data))
 
-        # reset password with no password
+    def test_api_reset_password_no_answer(self):
+        self.get_authorization_header()
+        # reset password with no answer
         user_data = {
             'password': 'test_pword3'
         }
@@ -210,18 +284,8 @@ class TestAPI(TestCase):
         self.assertIn('provide a valid answer',
                       str(change_password_resource.data))
 
-        # reset password with no password
-        user_data = {
-            'password': 'wrong_answer'
-        }
-
-        change_password_resource = self.client().post(
-            '/user/reset_password/?user=user20nm', data=user_data
-        )
-        self.assertEqual(change_password_resource.status_code, 400)
-        self.assertIn('provide a valid answer',
-                      str(change_password_resource.data))
-
+    def test_api_reset_password_successful(self):
+        self.get_authorization_header()
         # reset password with correct credentials
         user_data = {
             'password': 'est_password454',
@@ -243,21 +307,21 @@ class TestAPI(TestCase):
 
     def test_api_create_duplicate_username(self):
         # create a user
+        self.get_authorization_header()
+
+        # create another user with similar credentials
         user_data1 = {
-            'username': 'user100',
+            'username': 'user20nm',
             'password': 'test_password',
             'security_question': 'AM i?',
             'answer': 'answer'
         }
-        self.client().post('/user/register/', data=user_data1)
-
-        # create another user with similar credentials
         create_user_resource = self.client().post(
             '/user/register/', data=user_data1
         )
 
         self.assertEqual(create_user_resource.status_code, 409)
-        self.assertIn('username `{}` is already registered'.format('user100'),
+        self.assertIn('is already registered'.format('user100'),
                       str(create_user_resource.data))
 
     def test_api_authenticate_user_without_credentials(self):
@@ -288,6 +352,7 @@ class TestAPI(TestCase):
         self.assertEqual(authenticate_user_resource.status_code, 200)
         self.assertIn('token', str(authenticate_user_resource.data))
 
+    def test_api_authenticate_user_with_wrong_credentials(self):
         user_data2 = {
             'username': 'trcyujkhbguvy5h',
             'password': 'test_password'
@@ -313,71 +378,44 @@ class TestAPI(TestCase):
         self.assertIn('title must be provided',
                       str(create_shoppinglist_resource.data))
 
-    def test_crud_methods_of_shoppinglists(self):
-        headers = self.get_authorization_header()
-
-        # create a shoppinglists
-        create_shoppinglist_resource = self.client().post(
-            '/shoppinglist/',
-            data={'title': 'back to school'},
-            headers=headers
-        )
-
-        # get id of shoppinglist created
-        json_shoppinglist_resource = json.loads(
-            create_shoppinglist_resource.data.decode('utf-8').replace(
-                "'", "\"")
-        )
-        shoppinglist_id = json_shoppinglist_resource['id']
+    def test_create_shoppinglists(self):
+        create_shoppinglist_resource = self.create_shoppinglist_resource()
 
         # test if API can create shoppinglists
         self.assertEqual(create_shoppinglist_resource.status_code, 201)
         self.assertIn('back to school', str(create_shoppinglist_resource.data))
 
+    def test_get_shoppinglists(self):
         # test if API can retrieve created shoppinglists
-        get_shoppinglist_resource = self.client().get(
-            '/shoppinglist/',
-            headers=headers
-        )
+        get_shoppinglist_resource = self.get_shoppinglist_resource()
         self.assertEqual(get_shoppinglist_resource.status_code, 200)
         self.assertIn('back to school', str(get_shoppinglist_resource.data))
         self.assertIn('created_on', str(get_shoppinglist_resource.data))
         self.assertIn('modified_on', str(get_shoppinglist_resource.data))
 
+    def test_update_shoppinglists(self):
+        shoppinglist_id = self.get_shoppinglist_id()
+
         # test API can update shoppinglist
         response = self.client().put(
             '/shoppinglist/{}'.format(shoppinglist_id),
             data={'title': "weekend party"},
-            headers=headers
+            headers=self.get_authorization_header()
         )
-        self.assertEqual(response.status_code, 200)
-
         # assert shoppinglist was updated successfully
-        shoppinglist = self.client().get(
-            '/shoppinglist/{}'.format(shoppinglist_id),
-            headers=headers
-        )
-        self.assertIn('weekend party', str(shoppinglist.data))
-        # get current timestamp
-        epoch_time = time.time()
-        timestamp = datetime.datetime.fromtimestamp(epoch_time).strftime(
-            '%Y-%m-%d %H:%M')
-        self.assertIn(timestamp, str(shoppinglist.data))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('weekend party', str(response.data))
+        self.assertIn(self.get_current_timestamp(), str(response.data))
 
+    def test_delete_shoppinglists(self):
         # test API can delete shoppinglist
         # delete shoppinglist
         response = self.client().delete(
-            '/shoppinglist/{}'.format(shoppinglist_id),
-            headers=headers
+            '/shoppinglist/{}'.format(self.get_shoppinglist_id()),
+            headers=self.get_authorization_header()
         )
         self.assertEqual(response.status_code, 200)
-
-        # assert shoppinglist was deleted successfully
-        shoppinglist = self.client().get(
-            '/shoppinglist/{}'.format(shoppinglist_id),
-            headers=headers
-        )
-        self.assertEqual(shoppinglist.status_code, 404)
+        self.assertIn("successfully", str(response.data))
 
     def test_access_non_existent_shoppinglist(self):
         get_shoppinglist_resource = self.client().get(
@@ -389,25 +427,18 @@ class TestAPI(TestCase):
                       str(get_shoppinglist_resource.data))
 
     def test_create_duplicate_shoppinglists(self):
-        headers = self.get_authorization_header()
-
         # create a shoppinglists
-        self.client().post(
-            '/shoppinglist/',
-            data={'title': 'Trip to canada'},
-            headers=headers
-        )
+        self.create_shoppinglist_resource()
 
         # create a duplicate shoppinglists
         create_shoppinglist_resource = self.client().post(
             '/shoppinglist/',
-            data={'title': 'trip to canada'},
-            headers=headers
+            data={'title': 'back to school'},
+            headers=self.get_authorization_header()
         )
 
         self.assertEqual(create_shoppinglist_resource.status_code, 409)
-        self.assertIn('`trip to canada` already exists',
-                      str(create_shoppinglist_resource.data))
+        self.assertIn('already exists', str(create_shoppinglist_resource.data))
 
     def test_search_for_non_existent_shoppinglists(self):
         # search shoppinglist
@@ -416,8 +447,7 @@ class TestAPI(TestCase):
             headers=self.get_authorization_header()
         )
 
-        self.assertIn('No shoppinglist matches the keyword `shoppinglist '
-                      'one`',
+        self.assertIn('No shoppinglist matches the keyword',
                       str(search_shoppinglist_resource.data))
         self.assertEqual(search_shoppinglist_resource.status_code, 404)
 
@@ -425,20 +455,16 @@ class TestAPI(TestCase):
         headers = self.get_authorization_header()
 
         # create a shoppinglists
-        self.client().post(
-            '/shoppinglist/',
-            data={'title': 'trip to mombasa'},
-            headers=headers
-        )
+        self.create_shoppinglist_resource()
 
         # search shoppinglist
         search_shoppinglist_resource = self.client().get(
-            '/shoppinglist/?q=trip',
+            '/shoppinglist/?q=back',
             headers=headers
         )
 
         self.assertEqual(search_shoppinglist_resource.status_code, 200)
-        self.assertIn('trip to mombasa',
+        self.assertIn('back to school',
                       str(search_shoppinglist_resource.data))
 
     def test_shoppinglists_pagination(self):
@@ -457,187 +483,125 @@ class TestAPI(TestCase):
             headers=headers
         )
 
-        self.assertEqual(get_paginated_shoppinglist_resource.status_code, 200)
-
+        # covert response array to json
         json_data = json.loads(
             get_paginated_shoppinglist_resource.data.decode(
                 'utf-8').replace("'", "\"")
         )
 
+        self.assertEqual(get_paginated_shoppinglist_resource.status_code, 200)
         self.assertEqual(len(json_data), 100)
 
-    def test_crud_methods_of_shoppinglist_items(self):
-        headers = self.get_authorization_header()
-
-        # create a shoppinglist
-        create_shoppinglist_resource = self.client().post(
-            '/shoppinglist/',
-            data={'title': 'Trip to Dubai'},
-            headers=headers
-        )
-
-        # get id of shoppinglist created
-        json_shoppinglist_resource = json.loads(
-            create_shoppinglist_resource.data.decode('utf-8').replace(
-                "'", "\"")
-        )
-        shoppinglist_id = json_shoppinglist_resource['id']
+    def test_create_shoppinglist_item(self):
+        create_item_resource = self.create_item_resource()
 
         # test API can create shoppinglist item
-        create_item_resource = self.client().post(
-            '/shoppinglist/{}/items/'.format(shoppinglist_id),
-            data={'name': 'touring shoes', 'price': 10},
-            headers=headers
-        )
         self.assertEqual(create_item_resource.status_code, 201)
         self.assertIn('touring shoes', str(create_item_resource.data))
 
-        # get id of item created
-        json_item_resource = json.loads(
-            create_item_resource.data.decode('utf-8').replace(
-                "'", "\"")
-        )
-        item_id = json_item_resource['id']
-
+    def test_retrieve_shoppinglist_items(self):
         # test API can retrieve shoppinglist items
         get_item_resource = self.client().get(
-            '/shoppinglist/{}/items/'.format(shoppinglist_id),
-            headers=headers
+            '/items/{}'.format(self.get_item_id()),
+            headers=self.get_authorization_header()
         )
         self.assertEqual(get_item_resource.status_code, 200)
         self.assertIn('touring shoes', str(get_item_resource.data))
         self.assertIn('price', str(get_item_resource.data))
         self.assertIn('quantity', str(get_item_resource.data))
 
+    def test_update_item(self):
         # test API can update shoppinglist item
         update_item_resource = self.client().put(
-            '/items/{}'.format(item_id),
+            '/items/{}'.format(self.get_item_id()),
             data={
                 'name': 'Swimming floaters',
                 'price': '100',
                 'quantity': '1'
             },
-            headers=headers
+            headers=self.get_authorization_header()
         )
         self.assertEqual(update_item_resource.status_code, 200)
+        self.assertIn('swimming floaters', str(update_item_resource.data))
 
-        # assert item was updated successfully
-        items = self.client().get(
-            '/shoppinglist/{}/items/'.format(shoppinglist_id),
-            headers=headers
-        )
-        self.assertIn('swimming floaters', str(items.data))
-
+    def test_delete_item(self):
         # test API can delete shoppinglist item
         delete_item_resource = self.client().delete(
-            '/items/{}'.format(item_id),
-            headers=headers
+            '/items/{}'.format(self.get_item_id()),
+            headers=self.get_authorization_header()
         )
         self.assertEqual(delete_item_resource.status_code, 200)
+        self.assertIn('successfully', str(delete_item_resource.data))
 
-        # asert item has been deleted successfully
-        items = self.client().get(
-            '/shoppinglist/{}/items/'.format(shoppinglist_id),
-            headers=headers
-        )
-        self.assertNotIn('swimming floaters', str(items.data))
-
-    def test_shoppinglist_item_edge_cases(self):
+    def test_get_item_that_doesnt_exist(self):
         headers = self.get_authorization_header()
-
-        create_shoppinglist_resource = self.client().post(
-            '/shoppinglist/',
-            data={'title': 'Trip to Dubai'},
-            headers=headers
-        )
-
-        # get id of shoppinglist created
-        json_shoppinglist_resource = json.loads(
-            create_shoppinglist_resource.data.decode('utf-8').replace(
-                "'", "\"")
-        )
-        shoppinglist_id = json_shoppinglist_resource['id']
 
         # attempt to retrieve item that does not exist
         get_shoppinglist_resource = self.client().get(
-            '/items/12345'.format(shoppinglist_id),
+            '/items/12345',
             headers=headers
         )
         self.assertEqual(get_shoppinglist_resource.status_code, 404)
         self.assertIn('Requested shoppinglist item was not found',
                       str(get_shoppinglist_resource.data))
 
+    def test_create_blank_item(self):
         # create item with blank name
         create_item_resource = self.client().post(
-            '/shoppinglist/{}/items/'.format(shoppinglist_id),
+            '/shoppinglist/{}/items/'.format(self.get_shoppinglist_id()),
             data={'price': '10'},
-            headers=headers
+            headers=self.get_authorization_header()
         )
         self.assertEqual(create_item_resource.status_code, 400)
         self.assertIn('name must be provided', str(create_item_resource.data))
 
+    def test_create_item_with_no_price(self):
         # create item with no price
         create_item_resource = self.client().post(
-            '/shoppinglist/{}/items/'.format(shoppinglist_id),
+            '/shoppinglist/{}/items/'.format(self.get_shoppinglist_id()),
             data={'name': 'item one'},
-            headers=headers
+            headers=self.get_authorization_header()
         )
         self.assertEqual(create_item_resource.status_code, 400)
         self.assertIn('provide a valid item price',
                       str(create_item_resource.data))
 
+    def test_retrieve_items_from_none_existent_list(self):
         # Fetch items from list that doesn't exist
         create_item_resource = self.client().get(
             '/shoppinglist/{}/items/'.format(100000000000000000),
-            headers=headers
+            headers=self.get_authorization_header()
         )
         self.assertEqual(create_item_resource.status_code, 404)
         self.assertIn('Requested shoppinglist was not found',
                       str(create_item_resource.data))
 
-    def test_search_items(self):
-        headers = self.get_authorization_header()
-
-        # create a shoppinglist
-        create_shoppinglist_resource = self.client().post(
-            '/shoppinglist/',
-            data={'title': 'Trip to Atlanta'},
-            headers=headers
-        )
-
-        # get id of shoppinglist created
-        json_shoppinglist_resource = json.loads(
-            create_shoppinglist_resource.data.decode('utf-8').replace(
-                "'", "\"")
-        )
-        shoppinglist_id = json_shoppinglist_resource['id']
+    def test_search_items_that_doesnt_exist(self):
 
         # search item that doesnt exist
         search_items_resource = self.client().get(
-            '/shoppinglist/{}/items/?q=bread'.format(shoppinglist_id),
-            headers=headers
+            '/shoppinglist/{}/items/?q=bread'.format(
+                self.get_shoppinglist_id()),
+            headers=self.get_authorization_header()
         )
 
         self.assertEqual(search_items_resource.status_code, 404)
         self.assertIn('No item matches the keyword `bread`',
                       str(search_items_resource.data))
 
-        # create an item
-        self.client().post(
-            '/shoppinglist/{}/items/'.format(shoppinglist_id),
-            data={'name': 'touring shorts', 'price': '10'},
-            headers=headers
-        )
+    def test_search_item(self):
+        shoppinglist_id = self.get_shoppinglist_id()
+        self.create_item_resource(shoppinglist_id)
 
         # search items
         search_items_resource = self.client().get(
-            '/shoppinglist/{}/items/?q=shorts'.format(shoppinglist_id),
-            headers=headers
+            '/shoppinglist/{}/items/?q=tour'.format(
+                shoppinglist_id),
+            headers=self.get_authorization_header()
         )
 
         self.assertEqual(search_items_resource.status_code, 200)
-        self.assertIn('touring shorts',
-                      str(search_items_resource.data))
+        self.assertIn('tour', str(search_items_resource.data))
 
     def tearDown(self):
         with self.app.app_context():

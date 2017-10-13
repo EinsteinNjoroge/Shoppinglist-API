@@ -164,7 +164,10 @@ def create_app(config_mode):
     @flask_api.route('/user/logout/', methods=['GET'])
     def logout_user():
         global user_logged_in
+
         user_logged_in = None
+        flask_api.secret_key = os.urandom(24)  # create a random secret key
+
         data = {
             "message": "User logged out"
         }
@@ -202,15 +205,15 @@ def create_app(config_mode):
         username = str(args['user'])
         user = User.query.filter_by(username=username).first()
 
+        if not user:
+            data = {
+                "error_msg": "There is no registered user with the "
+                             "username `{}`".format(username)
+            }
+            return make_response(data, status_code=404)
+
         # Get security question
         if request.method == 'GET':
-
-            if not user:
-                data = {
-                    "error_msg": "There is no registered user with the "
-                                 "username `{}`".format(username)
-                }
-                return make_response(data, status_code=404)
 
             data = {
                 "security_question": user.security_question
