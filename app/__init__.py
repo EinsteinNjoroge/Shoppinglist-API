@@ -43,7 +43,7 @@ def create_app(config_mode):
             "error_msg": "Route does not exist. Please check the path you "
                          "provided and try again"
         }
-        return make_response(data, status_code=405)
+        return make_response(data, status_code=404)
 
     @flask_api.errorhandler(405)
     def method_not_allowed(e):
@@ -496,8 +496,6 @@ def create_app(config_mode):
     @auth.login_required
     def shoppinglist_item(item_id):
 
-        user_id = user_logged_in.id
-
         item = ShoppingListItems.query.filter_by(
             id=item_id).first()
 
@@ -506,12 +504,6 @@ def create_app(config_mode):
             return make_response(data=data, status_code=404)
 
         shoppinglist_id = item.shoppinglist_id
-        shopping_list = Shoppinglists.query.filter_by(id=shoppinglist_id,
-                                                      user_id=user_id).first()
-
-        if not shopping_list:
-            data = {'error_msg': "Requested shoppinglist item was not found"}
-            return make_response(data=data, status_code=404)
 
         if request.method == 'PUT':
             name = str(request.data.get('name', '')).lower().strip()

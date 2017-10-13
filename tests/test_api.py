@@ -9,6 +9,7 @@ from app.models import User
 from app.models import Shoppinglists
 from app.models import ShoppingListItems
 from app.models import generate_random_id
+import app
 
 
 class TestModels(TestCase):
@@ -152,6 +153,24 @@ class TestAPI(TestCase):
 
     # END HELPER FUNCTIONS
 
+    def test_api_index_page(self):
+        index_page = self.client().get('/')
+
+        self.assertEqual(index_page.status_code, 200)
+        self.assertIn('WELCOME', str(index_page.data))
+
+    def test_api_nonexistent_route(self):
+        index_page = self.client().get('/saghs')
+
+        self.assertEqual(index_page.status_code, 404)
+        self.assertIn('not exist', str(index_page.data))
+
+    def test_api_method_not_allowed(self):
+        index_page = self.client().post('/')
+
+        self.assertEqual(index_page.status_code, 405)
+        self.assertIn('not allowed', str(index_page.data))
+
     def test_api_user_password_complexity(self):
         user_data = {
             'username': 'test_user200',
@@ -174,6 +193,19 @@ class TestAPI(TestCase):
 
         self.assertEqual(create_user_resource.status_code, 400)
         self.assertIn('provide a valid username and password',
+                      str(create_user_resource.data))
+
+    def test_api_create_user_without_security_question(self):
+        user_data = {
+            'username': 'test_user200',
+            'password': '123'
+        }
+        create_user_resource = self.client().post(
+            '/user/register/', data=user_data
+        )
+
+        self.assertEqual(create_user_resource.status_code, 400)
+        self.assertIn('provide a valid security question',
                       str(create_user_resource.data))
 
     def test_api_create_user(self):
@@ -305,6 +337,10 @@ class TestAPI(TestCase):
         self.assertEqual(user_logout.status_code, 200)
         self.assertIn('User logged out', str(user_logout.data))
 
+    def test_invalid_verify_auth_token(self):
+        token = app.verify_auth_token("gdfchvjkbl")
+        self.assertEqual(None, token)
+
     def test_api_create_duplicate_username(self):
         # create a user
         self.get_authorization_header()
@@ -392,6 +428,32 @@ class TestAPI(TestCase):
         self.assertIn('back to school', str(get_shoppinglist_resource.data))
         self.assertIn('created_on', str(get_shoppinglist_resource.data))
         self.assertIn('modified_on', str(get_shoppinglist_resource.data))
+
+    def test_update_shoppinglists_without_title(self):
+        shoppinglist_id = self.get_shoppinglist_id()
+
+        # test API can update shoppinglist
+        response = self.client().put(
+            '/shoppinglist/{}'.format(shoppinglist_id),
+            data={'title': ""},
+            headers=self.get_authorization_header()
+        )
+        # assert shoppinglist was updated successfully
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('title must be provided', str(response.data))
+
+    def test_retrieve_shoppinglists(self):
+        shoppinglist_id = self.get_shoppinglist_id()
+
+        # test API can update shoppinglist
+        response = self.client().get(
+            '/shoppinglist/{}'.format(shoppinglist_id),
+            headers=self.get_authorization_header()
+        )
+        # assert shoppinglist was updated successfully
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('title', str(response.data))
+        self.assertIn(self.get_current_timestamp(), str(response.data))
 
     def test_update_shoppinglists(self):
         shoppinglist_id = self.get_shoppinglist_id()
@@ -564,6 +626,19 @@ class TestAPI(TestCase):
         )
         self.assertEqual(create_item_resource.status_code, 400)
         self.assertIn('provide a valid item price',
+                      str(create_item_resource.data))
+
+    def test_create_item_with_invalid_quantity(self):
+        # create item with invalid quantity
+        create_item_resource = self.client().post(
+            '/shoppinglist/{}/items/'.format(self.get_shoppinglist_id()),
+            data={'name': 'item one',
+                  'price': 30,
+                  'quantity': 'ff'},
+            headers=self.get_authorization_header()
+        )
+        self.assertEqual(create_item_resource.status_code, 400)
+        self.assertIn('provide a valid quantity',
                       str(create_item_resource.data))
 
     def test_retrieve_items_from_none_existent_list(self):

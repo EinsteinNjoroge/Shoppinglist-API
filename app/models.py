@@ -8,6 +8,7 @@ from flask_sqlalchemy import SQLAlchemy
 db = SQLAlchemy()  # initialize sql-alchemy
 secret_key = os.urandom(24)  # create a random secret key
 
+
 def generate_random_id():
     """generates a random integer value between 1 and 100000000
         :return
