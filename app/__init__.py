@@ -6,6 +6,7 @@ from flask import request
 from flask import jsonify
 from flask_api import FlaskAPI
 from flask_httpauth import HTTPBasicAuth
+from flask_httpauth import HTTPTokenAuth
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from itsdangerous import BadSignature
 from itsdangerous import SignatureExpired
@@ -17,6 +18,9 @@ from app.models import ShoppingListItems
 
 secret_key = os.urandom(24)  # create a random secret key for the application
 user_logged_in = None
+auth = HTTPBasicAuth()
+token_auth = HTTPTokenAuth('Bearer')
+serializer = Serializer(secret_key, expires_in=600)
 
 
 def create_app(config_mode):
@@ -27,7 +31,6 @@ def create_app(config_mode):
     flask_api.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     flask_api.secret_key = secret_key
     db.init_app(flask_api)
-    auth = HTTPBasicAuth()
 
     @flask_api.route('/', methods=['GET'])
     def index():
@@ -41,15 +44,14 @@ def create_app(config_mode):
     @flask_api.errorhandler(404)
     def route_not_found(e):
         data = {
-            "error_msg": "Route does not exist. Please check the path you "
-                         "provided and try again"
+            "error_msg": str(e)
         }
         return make_response(data, status_code=404)
 
     @flask_api.errorhandler(405)
     def method_not_allowed(e):
         data = {
-            "error_msg": "This method is not allowed on this path"
+            "error_msg": str(e)
         }
         return make_response(data, status_code=405)
 
@@ -146,14 +148,10 @@ def create_app(config_mode):
                     (boolen): True if user has been authorised, otherwise
                     returns False
             """
-        # Attempt to authenticate using token
-        user = verify_auth_token(username)
-
-        if not user:
-            # attempt authentication using password
-            password_hash = sha1_hash(pword)
-            user = User.query.filter_by(username=username,
-                                        password_hash=password_hash).first()
+        # attempt authentication using password
+        password_hash = sha1_hash(pword)
+        user = User.query.filter_by(username=username,
+                                    password_hash=password_hash).first()
         if user:
             # Credentials are authentic
             global user_logged_in
@@ -175,7 +173,7 @@ def create_app(config_mode):
         return make_response(data, 200)
 
     @flask_api.route('/user/change_password/', methods=['PUT'])
-    @auth.login_required
+    @token_auth.login_required
     def change_password():
 
         pword = str(request.data.get('password', ''))
@@ -255,7 +253,7 @@ def create_app(config_mode):
         return make_response(data, 200)
 
     @flask_api.route('/shoppinglist/', methods=['POST', 'GET'])
-    @auth.login_required
+    @token_auth.login_required
     def shoppinglists():
 
         user_id = user_logged_in.id
@@ -340,7 +338,7 @@ def create_app(config_mode):
 
     @flask_api.route('/shoppinglist/<int:list_id>',
                      methods=['PUT', 'GET', 'DELETE'])
-    @auth.login_required
+    @token_auth.login_required
     def shoppinglist(list_id):
         user_id = user_logged_in.id
 
@@ -395,7 +393,7 @@ def create_app(config_mode):
 
     @flask_api.route('/shoppinglist/<int:list_id>/items/',
                      methods=['POST', 'GET'])
-    @auth.login_required
+    @token_auth.login_required
     def shoppinglist_items(list_id):
 
         user_id = user_logged_in.id
@@ -497,7 +495,7 @@ def create_app(config_mode):
 
     @flask_api.route('/items/<int:item_id>',
                      methods=['PUT', 'GET', 'DELETE'])
-    @auth.login_required
+    @token_auth.login_required
     def shoppinglist_item(item_id):
 
         item = ShoppingListItems.query.filter_by(
@@ -684,10 +682,10 @@ def generate_auth_token():
         :return
             (byte): Authentication token
     """
-    s = Serializer(secret_key, expires_in=600)
-    return s.dumps({'id': user_logged_in.id})
+    return serializer.dumps({'id': user_logged_in.id})
 
 
+@token_auth.verify_token
 def verify_auth_token(token):
     """Checks an authentication token to validate that it has a valid user's ID
     and is not expired
@@ -698,13 +696,9 @@ def verify_auth_token(token):
         :return
             (boolean): True if token is valid otherwise returns False
     """
-    serializer = Serializer(secret_key)
-
     try:
         data = serializer.loads(token)
-    except SignatureExpired:
-        return None  # valid token, but expired
-    except BadSignature:
+    except (SignatureExpired, BadSignature):
         return None  # invalid token
 
     user = User.query.get(data['id'])

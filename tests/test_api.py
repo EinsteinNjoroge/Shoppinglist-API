@@ -1,4 +1,3 @@
-from base64 import b64encode
 import time
 import datetime
 from flask import json
@@ -64,6 +63,17 @@ class TestModels(TestCase):
 
 class TestAPI(TestCase):
     def setUp(self):
+        self.username = 'user20nm'
+        pword = 'test_password'
+        security_question = "Am I myself?"
+        answer = 'yes'
+
+        self.test_user = {
+            'username': self.username,
+            'password': pword,
+            'answer': answer,
+            'security_question': security_question
+        }
         self.app = create_app(config_mode="testing")
 
         with self.app.app_context():  # bind the app to the current context
@@ -72,20 +82,18 @@ class TestAPI(TestCase):
         self.client = self.app.test_client
 
     # HELPER FUNCTIONS
-    def get_authorization_header(self):
-        # create a user and login to account created
-        username = 'user20nm'
-        pword = 'test_password'
-        security_question = "Am I myself?"
-        answer = 'yes'
-        test_user = {'username': username, 'password': pword,
-                     'answer': answer, 'security_question': security_question}
-        self.client().post('/user/register/', data=test_user)
+    def get_authorization_token(self):
+        # create a user for testing
+        self.client().post('/user/register/', data=self.test_user)
 
+        r = self.client().post('/user/login/', data=self.test_user)
+        token = json.loads(r.data)['token']
+        return token
+
+    def get_authorization_header(self):
+        token = self.get_authorization_token()
         header = {
-            'Authorization': 'Basic ' + b64encode(
-                bytes("{0}:{1}".format(username, pword), 'ascii')
-            ).decode('ascii')
+            'Authorization': 'Bearer ' + token
         }
         return header
 
@@ -163,7 +171,7 @@ class TestAPI(TestCase):
         index_page = self.client().get('/saghs')
 
         self.assertEqual(index_page.status_code, 404)
-        self.assertIn('not exist', str(index_page.data))
+        self.assertIn('Not Found', str(index_page.data))
 
     def test_api_method_not_allowed(self):
         index_page = self.client().post('/')
@@ -340,6 +348,11 @@ class TestAPI(TestCase):
     def test_invalid_verify_auth_token(self):
         token = app.verify_auth_token("gdfchvjkbl")
         self.assertEqual(None, token)
+
+    def test_valid_token(self):
+        with self.app.app_context():  # bind app to current context
+            user = app.verify_auth_token(self.get_authorization_token())
+            self.assertEqual(user.username, self.username)
 
     def test_api_create_duplicate_username(self):
         # create a user
