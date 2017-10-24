@@ -1,4 +1,3 @@
-from base64 import b64encode
 import time
 import datetime
 from flask import json
@@ -9,6 +8,7 @@ from app.models import User
 from app.models import Shoppinglists
 from app.models import ShoppingListItems
 from app.models import generate_random_id
+import app
 
 
 class TestModels(TestCase):
@@ -63,6 +63,17 @@ class TestModels(TestCase):
 
 class TestAPI(TestCase):
     def setUp(self):
+        self.username = 'user20nm'
+        pword = 'test_password'
+        security_question = "Am I myself?"
+        answer = 'yes'
+
+        self.test_user = {
+            'username': self.username,
+            'password': pword,
+            'answer': answer,
+            'security_question': security_question
+        }
         self.app = create_app(config_mode="testing")
 
         with self.app.app_context():  # bind the app to the current context
@@ -71,20 +82,18 @@ class TestAPI(TestCase):
         self.client = self.app.test_client
 
     # HELPER FUNCTIONS
-    def get_authorization_header(self):
-        # create a user and login to account created
-        username = 'user20nm'
-        pword = 'test_password'
-        security_question = "Am I myself?"
-        answer = 'yes'
-        test_user = {'username': username, 'password': pword,
-                     'answer': answer, 'security_question': security_question}
-        self.client().post('/user/register/', data=test_user)
+    def get_authorization_token(self):
+        # create a user for testing
+        self.client().post('/user/register/', data=self.test_user)
 
+        r = self.client().post('/user/login/', data=self.test_user)
+        token = json.loads(r.data)['token']
+        return token
+
+    def get_authorization_header(self):
+        token = self.get_authorization_token()
         header = {
-            'Authorization': 'Basic ' + b64encode(
-                bytes("{0}:{1}".format(username, pword), 'ascii')
-            ).decode('ascii')
+            'Authorization': 'Bearer ' + token
         }
         return header
 
@@ -138,8 +147,8 @@ class TestAPI(TestCase):
         )
         return item_resource
 
-    def get_item_id(self):
-        create_item_resource = self.create_item_resource()
+    def get_item_id(self, shoppinglist_id=None):
+        create_item_resource = self.create_item_resource(shoppinglist_id)
 
         # get id of item created
         json_item_resource = json.loads(
@@ -151,6 +160,24 @@ class TestAPI(TestCase):
         return item_id
 
     # END HELPER FUNCTIONS
+
+    def test_api_index_page(self):
+        index_page = self.client().get('/')
+
+        self.assertEqual(index_page.status_code, 200)
+        self.assertIn('WELCOME', str(index_page.data))
+
+    def test_api_nonexistent_route(self):
+        index_page = self.client().get('/saghs')
+
+        self.assertEqual(index_page.status_code, 404)
+        self.assertIn('Not Found', str(index_page.data))
+
+    def test_api_method_not_allowed(self):
+        index_page = self.client().post('/')
+
+        self.assertEqual(index_page.status_code, 405)
+        self.assertIn('not allowed', str(index_page.data))
 
     def test_api_user_password_complexity(self):
         user_data = {
@@ -174,6 +201,19 @@ class TestAPI(TestCase):
 
         self.assertEqual(create_user_resource.status_code, 400)
         self.assertIn('provide a valid username and password',
+                      str(create_user_resource.data))
+
+    def test_api_create_user_without_security_question(self):
+        user_data = {
+            'username': 'test_user200',
+            'password': '123'
+        }
+        create_user_resource = self.client().post(
+            '/user/register/', data=user_data
+        )
+
+        self.assertEqual(create_user_resource.status_code, 400)
+        self.assertIn('provide a valid security question',
                       str(create_user_resource.data))
 
     def test_api_create_user(self):
@@ -305,6 +345,15 @@ class TestAPI(TestCase):
         self.assertEqual(user_logout.status_code, 200)
         self.assertIn('User logged out', str(user_logout.data))
 
+    def test_invalid_verify_auth_token(self):
+        token = app.verify_auth_token("gdfchvjkbl")
+        self.assertEqual(None, token)
+
+    def test_valid_token(self):
+        with self.app.app_context():  # bind app to current context
+            user = app.verify_auth_token(self.get_authorization_token())
+            self.assertEqual(user.username, self.username)
+
     def test_api_create_duplicate_username(self):
         # create a user
         self.get_authorization_header()
@@ -392,6 +441,32 @@ class TestAPI(TestCase):
         self.assertIn('back to school', str(get_shoppinglist_resource.data))
         self.assertIn('created_on', str(get_shoppinglist_resource.data))
         self.assertIn('modified_on', str(get_shoppinglist_resource.data))
+
+    def test_update_shoppinglists_without_title(self):
+        shoppinglist_id = self.get_shoppinglist_id()
+
+        # test API can update shoppinglist
+        response = self.client().put(
+            '/shoppinglist/{}'.format(shoppinglist_id),
+            data={'title': ""},
+            headers=self.get_authorization_header()
+        )
+        # assert shoppinglist was updated successfully
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('title must be provided', str(response.data))
+
+    def test_retrieve_shoppinglists(self):
+        shoppinglist_id = self.get_shoppinglist_id()
+
+        # test API can update shoppinglist
+        response = self.client().get(
+            '/shoppinglist/{}'.format(shoppinglist_id),
+            headers=self.get_authorization_header()
+        )
+        # assert shoppinglist was updated successfully
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('title', str(response.data))
+        self.assertIn(self.get_current_timestamp(), str(response.data))
 
     def test_update_shoppinglists(self):
         shoppinglist_id = self.get_shoppinglist_id()
@@ -524,6 +599,23 @@ class TestAPI(TestCase):
         self.assertEqual(update_item_resource.status_code, 200)
         self.assertIn('swimming floaters', str(update_item_resource.data))
 
+    def test_update_item__with_duplicate_name(self):
+
+        shoppinglist_id = self.get_shoppinglist_id()
+
+        # test API can update shoppinglist item
+        update_item_resource = self.client().put(
+            '/items/{}'.format(self.get_item_id(shoppinglist_id)),
+            data={
+                'name': 'touring shoes',
+                'price': '100',
+                'quantity': '1'
+            },
+            headers=self.get_authorization_header()
+        )
+        self.assertEqual(update_item_resource.status_code, 409)
+        self.assertIn('already exist', str(update_item_resource.data))
+
     def test_delete_item(self):
         # test API can delete shoppinglist item
         delete_item_resource = self.client().delete(
@@ -549,11 +641,22 @@ class TestAPI(TestCase):
         # create item with blank name
         create_item_resource = self.client().post(
             '/shoppinglist/{}/items/'.format(self.get_shoppinglist_id()),
-            data={'price': '10'},
+            data={'price': 10},
             headers=self.get_authorization_header()
         )
         self.assertEqual(create_item_resource.status_code, 400)
         self.assertIn('name must be provided', str(create_item_resource.data))
+
+    def test_create_item_with_invalid_price(self):
+
+        create_item_resource = self.client().post(
+            '/shoppinglist/{}/items/'.format(self.get_shoppinglist_id()),
+            data={'name': "asdas", 'price': "asdas"},
+            headers=self.get_authorization_header()
+        )
+        self.assertEqual(create_item_resource.status_code, 400)
+        self.assertIn('provide a valid item price',
+                      str(create_item_resource.data))
 
     def test_create_item_with_no_price(self):
         # create item with no price
@@ -564,6 +667,19 @@ class TestAPI(TestCase):
         )
         self.assertEqual(create_item_resource.status_code, 400)
         self.assertIn('provide a valid item price',
+                      str(create_item_resource.data))
+
+    def test_create_item_with_invalid_quantity(self):
+        # create item with invalid quantity
+        create_item_resource = self.client().post(
+            '/shoppinglist/{}/items/'.format(self.get_shoppinglist_id()),
+            data={'name': 'item one',
+                  'price': 30,
+                  'quantity': 'ff'},
+            headers=self.get_authorization_header()
+        )
+        self.assertEqual(create_item_resource.status_code, 400)
+        self.assertIn('provide a valid quantity',
                       str(create_item_resource.data))
 
     def test_retrieve_items_from_none_existent_list(self):
@@ -602,6 +718,26 @@ class TestAPI(TestCase):
 
         self.assertEqual(search_items_resource.status_code, 200)
         self.assertIn('tour', str(search_items_resource.data))
+
+    def test_items_pagination(self):
+        headers = self.get_authorization_header()
+        shoppinglist_id = self.get_shoppinglist_id()
+        self.create_item_resource(shoppinglist_id)
+
+        # get items with pagination
+        get_paginated_items_resource = self.client().get(
+            '/shoppinglist/{}/items/?limit=1'.format(shoppinglist_id),
+            headers=headers
+        )
+
+        # covert response array to json
+        json_data = json.loads(
+            get_paginated_items_resource.data.decode(
+                'utf-8').replace("'", "\"")
+        )
+
+        self.assertEqual(get_paginated_items_resource.status_code, 200)
+        self.assertEqual(len(json_data), 1)
 
     def tearDown(self):
         with self.app.app_context():
