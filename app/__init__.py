@@ -133,7 +133,7 @@ def create_app(config_mode):
             return make_response(data, status_code=200)
 
         data = {
-            "message": "Wrong credentials combination"
+            "error_msg": "Wrong credentials combination"
         }
         return make_response(data, 401)
 
