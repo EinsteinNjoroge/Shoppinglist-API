@@ -5,6 +5,7 @@ import datetime
 from flask import request
 from flask import jsonify
 from flask_api import FlaskAPI
+from flask_cors import CORS
 from flask_httpauth import HTTPBasicAuth
 from flask_httpauth import HTTPTokenAuth
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
@@ -25,6 +26,7 @@ serializer = Serializer(secret_key, expires_in=600)
 
 def create_app(config_mode):
     flask_api = FlaskAPI(__name__, instance_relative_config=True)
+    CORS(flask_api)  # allow cross-origin-resource-sharing
     flask_api.config.from_object(configurations[config_mode])
     flask_api.url_map.strict_slashes = False
     flask_api.config.from_pyfile('config.py')
