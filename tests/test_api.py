@@ -142,7 +142,7 @@ class TestAPI(TestCase):
 
         item_resource = self.client().post(
             '/shoppinglist/{}/items/'.format(shoppinglist_id),
-            data={'name': 'touring shoes', 'price': 10},
+            data={'name': 'touring shoes', 'price': 100},
             headers=headers
         )
         return item_resource
@@ -599,7 +599,7 @@ class TestAPI(TestCase):
         self.assertEqual(update_item_resource.status_code, 200)
         self.assertIn('swimming floaters', str(update_item_resource.data))
 
-    def test_update_item__with_duplicate_name(self):
+    def test_update_item_with_duplicate_name(self):
 
         shoppinglist_id = self.get_shoppinglist_id()
 

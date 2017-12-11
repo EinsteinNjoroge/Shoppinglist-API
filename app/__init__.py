@@ -409,16 +409,14 @@ def create_app(config_mode):
             # Create shoppinglist item with the name provided
             name = str(request.data.get('name', '')).lower().strip()
             price = str(request.data.get('price', ''))
-            quantity = str(request.data.get('quantity', ''))
+            quantity = str(request.data.get('quantity', 1))
 
-            if not quantity:
-                quantity = 1
-
-            error_message = validate_item_name(name, list_id)
+            error_message = validate_item_price_and_quantity(
+                    price, quantity)
 
             if not error_message:
-                error_message = validate_item_price_and_quantity(
-                    price, quantity)
+                data = [name, price, quantity]
+                error_message = validate_item_name(data, list_id)
 
             if error_message:
                 return error_message
@@ -514,8 +512,10 @@ def create_app(config_mode):
             price = str(request.data.get('price', ''))
             quantity = str(request.data.get('quantity', ''))
 
+            data = [name, price, quantity]
+
             # check if item name is valid
-            error_message = validate_item_name(name, shoppinglist_id)
+            error_message = validate_item_name(data, shoppinglist_id)
 
             if not error_message:
                 error_message = validate_item_price_and_quantity(
@@ -595,12 +595,12 @@ def validate_title(title):
         return make_response(data, status_code=409)
 
 
-def validate_item_name(name, list_id):
+def validate_item_name(data, list_id):
     """Validates that a name has the at-least one character and that no
     other item - belonging to the current user - has a similar name
 
         :arg:
-            name (string): The name of item to be created
+            data (array): An array containing the name, price and quantity of item to be created
             list_id (int): ID of the shoppinglist where item will be created
 
         :return
@@ -608,16 +608,16 @@ def validate_item_name(name, list_id):
             returns None
     """
 
-    if not name:
+    if not data[0]:
         data = {
             'error_msg': "Item name must be provided"
         }
         return make_response(data, status_code=400)
 
     if ShoppingListItems.query.filter_by(
-            name=name, shoppinglist_id=list_id).first():
+            name=data[0], price=data[1], quantity=data[2], shoppinglist_id=list_id).first():
         data = {
-            'error_msg': "Item `{}` already exists".format(name)
+            'error_msg': "Item `{}` already exists".format(data[0])
         }
         return make_response(data, status_code=409)
 

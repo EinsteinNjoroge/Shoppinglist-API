@@ -99,8 +99,8 @@ class ShoppingListItems(db.Model):
     __tablename__ = 'shoppinglist_items'
     id = db.Column('id', db.Integer, primary_key=True)
     name = db.Column('name', db.String(100), nullable=False)
-    price = db.Column('price', db.Integer, nullable=False)
-    quantity = db.Column('quantity', db.Integer, nullable=False)
+    price = db.Column('price', db.Float, nullable=False)
+    quantity = db.Column('quantity', db.Float, nullable=False)
     shoppinglist_id = db.Column(
         db.Integer, db.ForeignKey(
             'shoppinglists.id',
