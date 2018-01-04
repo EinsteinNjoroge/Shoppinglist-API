@@ -17,11 +17,11 @@ from app.models import User
 from app.models import Shoppinglists
 from app.models import ShoppingListItems
 
-secret_key = os.urandom(24)  # create a random secret key for the application
+secret_key = 'this-is-my-key-(dfgvbnhj!@#$%^&*)'
 user_logged_in = None
 auth = HTTPBasicAuth()
 token_auth = HTTPTokenAuth('Bearer')
-serializer = Serializer(secret_key, expires_in=600)
+serializer = Serializer(secret_key, expires_in=900)
 
 
 def create_app(config_mode):
